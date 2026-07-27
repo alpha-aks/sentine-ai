@@ -9,12 +9,15 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@sentinel-ai/types": "file:../../packages/types",
+    "@neondatabase/auth-ui": "^0.2.1-beta",
+    "@neondatabase/neon-js": "^0.6.2-beta",
     "@sentinel-ai/constants": "file:../../packages/constants",
+    "@sentinel-ai/types": "file:../../packages/types",
     "@sentinel-ai/ui": "file:../../packages/ui",
     "lucide-react": "^0.344.0",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^7.18.1"
   },
   "devDependencies": {
     "@types/react": "^18.2.66",
