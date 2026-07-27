@@ -1,0 +1,12 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+# Enforce Conventional Commit messages
+commit_msg=$(cat "$1")
+pattern="^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-z0-9-]+\))?: .+"
+
+if ! echo "$commit_msg" | grep -qE "$pattern"; then
+  echo "❌ INVALID COMMIT MESSAGE: '$commit_msg'"
+  echo "Commit messages must follow Conventional Commit format, e.g.: feat(vision): add head pose angle threshold"
+  exit 1
+fi

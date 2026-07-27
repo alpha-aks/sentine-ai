@@ -1,0 +1,34 @@
+export const ROLES = {
+  CANDIDATE: 'CANDIDATE',
+  LIVE_PROCTOR: 'LIVE_PROCTOR',
+  PROCTOR_SUPERVISOR: 'PROCTOR_SUPERVISOR',
+  EXAM_ADMIN: 'EXAM_ADMIN',
+  COMPLIANCE_OFFICER: 'COMPLIANCE_OFFICER'
+} as const;
+
+export const SESSION_STATES = {
+  NOT_STARTED: 'NOT_STARTED',
+  WAITING_ROOM: 'WAITING_ROOM',
+  READY: 'READY',
+  ACTIVE: 'ACTIVE',
+  PAUSED: 'PAUSED',
+  RECONNECTING: 'RECONNECTING',
+  SUSPENDED: 'SUSPENDED',
+  SUBMITTED: 'SUBMITTED',
+  ENDED: 'ENDED',
+  TERMINATED: 'TERMINATED',
+  DISQUALIFIED: 'DISQUALIFIED'
+} as const;
+
+export const QUESTION_TYPES = {
+  MCQ_SINGLE: 'Multiple Choice (Single)',
+  MCQ_MULTIPLE: 'Multiple Choice (Multiple)',
+  TRUE_FALSE: 'True / False',
+  SHORT_ANSWER: 'Short Answer',
+  LONG_ANSWER: 'Long Answer (Essay)',
+  NUMERICAL: 'Numerical',
+  CODE_SNIPPET: 'Code Snippet',
+  FILE_UPLOAD: 'File Upload',
+  MATCHING: 'Matching',
+  ORDERING: 'Ordering'
+} as const;

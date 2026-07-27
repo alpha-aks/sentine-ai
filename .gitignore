@@ -1,0 +1,26 @@
+# Dependencies
+node_modules
+.pnpm-store
+
+# Build Outputs
+dist
+build
+.next
+out
+*.tsbuildinfo
+
+# Logs & Environment
+*.log
+.env
+.env.local
+.env.development.local
+.env.production.local
+
+# IDE & OS Files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Turbo cache
+.turbo

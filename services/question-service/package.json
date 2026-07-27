@@ -1,0 +1,29 @@
+{
+  "name": "@sentinel-ai/question-service",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "scripts": {
+    "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "type-check": "tsc --noEmit",
+    "test": "node -r ts-node/register --test src/__tests__/*.test.ts"
+  },
+  "dependencies": {
+    "@sentinel-ai/config": "file:../../packages/config",
+    "@sentinel-ai/event-sdk": "file:../../packages/event-sdk",
+    "@sentinel-ai/logger": "file:../../packages/logger",
+    "@sentinel-ai/security": "file:../../packages/security",
+    "@sentinel-ai/types": "file:../../packages/types",
+    "@sentinel-ai/utils": "file:../../packages/utils",
+    "@sentinel-ai/validation": "file:../../packages/validation",
+    "express": "^4.19.2"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.11.0",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.4.0"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "name": "@sentinel-ai/testing",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@sentinel-ai/api-client": "file:../api-client",
+    "@sentinel-ai/event-sdk": "file:../event-sdk",
+    "@sentinel-ai/security": "file:../security",
+    "@sentinel-ai/types": "file:../types",
+    "@sentinel-ai/utils": "file:../utils",
+    "@sentinel-ai/websocket-sdk": "file:../websocket-sdk"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "typescript": "^5.4.0"
+  }
+}
