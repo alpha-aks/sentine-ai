@@ -13,7 +13,7 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<HomePage />} />
-          <Route path="/auth" element={<AuthPage />} />
+          <Route path="/auth/*" element={<AuthPage />} />
           <Route path="/account" element={<AccountPage />} />
         </Routes>
       </BrowserRouter>
