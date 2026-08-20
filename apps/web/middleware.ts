@@ -1,30 +1,32 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
 
-const publicPaths = ['/login', '/register', '/forgot-password', '/reset-password', '/404', '/unauthorized', '/forbidden'];
+const isPublicRoute = createRouteMatcher([
+  '/',
+  '/login(.*)',
+  '/register(.*)',
+  '/sign-in(.*)',
+  '/sign-up(.*)',
+  '/forgot-password(.*)',
+  '/reset-password(.*)',
+  '/404',
+  '/unauthorized',
+  '/forbidden',
+  '/api(.*)'
+]);
 
-export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-
-  // Allow public static assets and API routes
-  if (
-    pathname.startsWith('/_next') ||
-    pathname.startsWith('/api') ||
-    pathname.includes('.')
-  ) {
-    return NextResponse.next();
+export default clerkMiddleware((auth, request) => {
+  if (!isPublicRoute(request)) {
+    auth().protect();
   }
-
-  const token = request.cookies.get('sentinel_access_token')?.value;
-
-  // If path is public and user is trying to access auth pages while authenticated
-  if (publicPaths.includes(pathname)) {
-    return NextResponse.next();
-  }
-
-  return NextResponse.next();
-}
+});
 
 export const config = {
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)']
+  matcher: [
+    // Skip Next.js internals and all static files, unless found in search params
+    '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
+    // Always run for API routes
+    '/(api|trpc)(.*)',
+    '/__clerk/:path*',
+  ],
 };
+

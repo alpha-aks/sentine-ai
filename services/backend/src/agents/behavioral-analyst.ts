@@ -7,6 +7,10 @@ export class BehavioralAnalystAgent {
     const linearity = telemetry.mouseLinearityR2 ?? 0.45;
     const pastedLength = telemetry.pastedLength ?? 0;
     const windowBlur = telemetry.windowBlur ?? false;
+    const fullscreenExit = telemetry.fullscreenExit ?? false;
+    const tabSwitchCount = telemetry.tabSwitchCount ?? 0;
+    const idleTimeSeconds = telemetry.idleTimeSeconds ?? 0;
+    const rapidAnswerChange = telemetry.rapidAnswerChange ?? false;
 
     // Keystroke anomaly scoring: extremely fast typing or zero-variance timing indicates macro/proxy
     let keystrokeAnomalyScore = 0.05;
@@ -17,11 +21,14 @@ export class BehavioralAnalystAgent {
     const mouseRoboticScore = linearity > 0.95 ? 0.94 : 0.08;
 
     const largePasteFlag = pastedLength > 40;
-    const windowBlurFlag = windowBlur;
+    const windowBlurFlag = windowBlur || tabSwitchCount > 0;
+    const fullscreenExitFlag = fullscreenExit;
+    const idleTimeFlag = idleTimeSeconds > 90;
+    const rapidAnswerFlag = rapidAnswerChange;
 
     let confidence = 0.92;
-    if (largePasteFlag) confidence = 1.0;
-    else if (keystrokeAnomalyScore > 0.8) confidence = 0.95;
+    if (largePasteFlag || fullscreenExitFlag) confidence = 0.98;
+    else if (keystrokeAnomalyScore > 0.8 || windowBlurFlag) confidence = 0.95;
 
     return {
       agentId: 'BEHAVIORAL_ANALYST',
@@ -30,7 +37,11 @@ export class BehavioralAnalystAgent {
       keystrokeAnomalyScore,
       mouseRoboticScore,
       largePasteFlag,
-      windowBlurFlag
+      windowBlurFlag,
+      fullscreenExitFlag,
+      tabSwitchCount,
+      idleTimeFlag,
+      rapidAnswerFlag
     };
   }
 }

@@ -7,11 +7,16 @@ export class VisionGuardAgent {
     const headYaw = Math.abs(telemetry.headYaw ?? 0);
     const personCount = telemetry.personCount ?? 1;
     const detectedObjects = telemetry.detectedObjects ?? [];
+    const cameraBlocked = telemetry.cameraBlocked ?? false;
+    const cameraLost = telemetry.cameraLost ?? false;
+    const frameFreezeDetected = telemetry.frameFreezeDetected ?? false;
 
-    // Gaze offscreen evaluation: gaze offset > 0.65 or head yaw > 35 degrees
-    const offscreenGazeFlag = Math.abs(gazeX) > 0.65 || Math.abs(gazeY) > 0.65 || headYaw > 35;
-    const headPoseAnomaly = headYaw > 45;
-    const cameraTamperFlag = personCount === 0;
+    // Gaze evaluation: Downward gaze (gazeY > 0 up to 0.75) is permissible for typing/reading
+    // Looking away horizontally (|gazeX| > 0.55), far up (gazeY < -0.55), or head yaw > 32 is flagged
+    const offscreenGazeFlag = Math.abs(gazeX) > 0.55 || gazeY < -0.55 || gazeY > 0.85 || headYaw > 32;
+    const headPoseAnomaly = headYaw > 40;
+    const cameraTamperFlag = personCount === 0 || cameraBlocked || cameraLost || frameFreezeDetected;
+
 
     // Detect secondary electronics or unauthorized material
     const detectedDevices = detectedObjects.filter((obj: string) => 

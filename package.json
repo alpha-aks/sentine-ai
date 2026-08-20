@@ -10,6 +10,7 @@
   ],
   "scripts": {
     "dev": "turbo run dev --parallel",
+    "dev:dashboards": "concurrently \"npm --prefix apps/admin-portal run dev\" \"npm --prefix apps/proctor-dashboard run dev\" \"npm --prefix apps/student-portal run dev\" \"npm --prefix apps/web run dev\"",
     "build": "turbo run build",
     "type-check": "turbo run type-check",
     "lint": "turbo run lint",
@@ -28,7 +29,8 @@
     "lint-staged": "^15.2.2",
     "prettier": "^3.2.5",
     "turbo": "^1.13.0",
-    "typescript": "^5.4.0"
+    "typescript": "^5.4.0",
+    "concurrently": "^8.2.2"
   },
   "engines": {
     "node": ">=18.0.0",

@@ -1,7 +1,7 @@
 import { Pool } from 'pg';
 import { ExamSession, Alert } from '@sentinel-ai/types';
 
-const NEON_CONNECTION_STRING = 'postgresql://neondb_owner:npg_5wfMoHAIkT9l@ep-cold-field-axgysjiu-pooler.c-4.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require';
+const NEON_CONNECTION_STRING = 'postgresql://neondb_owner:npg_OKt24VeGxsSD@ep-cold-field-axgysjiu-pooler.c-4.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require';
 
 export const pool = new Pool({
   connectionString: NEON_CONNECTION_STRING,

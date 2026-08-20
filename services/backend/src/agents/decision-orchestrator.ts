@@ -102,11 +102,12 @@ export class DecisionOrchestratorAgent {
     }
 
     const dynamicState = this.riskPredictor.computeRiskState(telemetry.timestamp);
-    const finalRiskScore = dynamicState.currentRiskScore;
+    const isWifiCritical = collusionSignal.wifiCollusionFlag ?? false;
+    const finalRiskScore = isWifiCritical ? 1.00 : dynamicState.currentRiskScore;
 
     // Determine Alert Level based on policy thresholds
     let alertLevel: AlertLevel = 'NONE';
-    if (finalRiskScore >= this.thresholds.critical) alertLevel = 'CRITICAL';
+    if (isWifiCritical || finalRiskScore >= this.thresholds.critical) alertLevel = 'CRITICAL';
     else if (finalRiskScore >= this.thresholds.high) alertLevel = 'HIGH';
     else if (finalRiskScore >= this.thresholds.medium) alertLevel = 'MEDIUM';
     else if (finalRiskScore >= this.thresholds.low) alertLevel = 'LOW';
@@ -114,21 +115,22 @@ export class DecisionOrchestratorAgent {
     // Generate Natural Language XAI Trace
     const evidenceList: string[] = [];
     if (visionSignal.offscreenGazeFlag) evidenceList.push('Off-screen gaze trajectory detected');
-    if (visionSignal.headPoseAnomaly) evidenceList.push('Unusual head pose orientation (>45 deg)');
+    if (visionSignal.headPoseAnomaly) evidenceList.push('Unusual head pose orientation (>40 deg)');
     if (visionSignal.personCount > 1) evidenceList.push(`${visionSignal.personCount} faces detected in frame`);
     if (visionSignal.detectedDevices.length > 0) evidenceList.push(`Secondary device(s) visible: ${visionSignal.detectedDevices.join(', ')}`);
     if (behaviorSignal.largePasteFlag) evidenceList.push('Unusually large text insertion from external clipboard');
     if (behaviorSignal.windowBlurFlag) evidenceList.push('Browser window focus lost');
-    if (collusionSignal.wifiCollusionFlag) evidenceList.push(`WiFi Subnet Collusion: ${collusionSignal.wifiCollusionDetail || 'ChatGPT query detected'}`);
+    if (collusionSignal.wifiCollusionFlag) evidenceList.push(`WiFi Subnet Collusion Intercepted: ${collusionSignal.wifiCollusionDetail || 'ChatGPT query detected'}`);
     if (collusionSignal.whisperDetected) evidenceList.push('Low-frequency acoustic whisper pattern isolated');
     if (collusionSignal.speechDetected) evidenceList.push('Human speech detected in audio stream');
 
     const naturalLanguageExplanation = evidenceList.length > 0
-      ? `Flagged due to: ${evidenceList.join('; ')}. Primary risk driver: ${dynamicState.primaryRiskDriver}. Risk trajectory velocity: ${dynamicState.riskVelocity > 0 ? '+' : ''}${dynamicState.riskVelocity}/min.`
+      ? `Flagged due to: ${evidenceList.join('; ')}. Primary risk driver: ${isWifiCritical ? 'Prohibited Wi-Fi Subnet Query (Instant Termination)' : dynamicState.primaryRiskDriver}.`
       : 'Session operating within expected nominal integrity parameters.';
 
     let recommendedAction = 'Continue passive monitoring';
-    if (alertLevel === 'CRITICAL') recommendedAction = 'IMMEDIATE INTERVENTION RECOMMENDED: Pause session or issue strict warning toast';
+    if (isWifiCritical) recommendedAction = 'IMMEDIATE TERMINATION: Auto-lock exam session and flag for administrative review';
+    else if (alertLevel === 'CRITICAL') recommendedAction = 'IMMEDIATE INTERVENTION RECOMMENDED: Pause session or issue strict warning toast';
     else if (alertLevel === 'HIGH') recommendedAction = 'Review multi-modal evidence clip and issue candidate warning';
     else if (alertLevel === 'MEDIUM') recommendedAction = 'Monitor active stream for secondary risk triggers';
 

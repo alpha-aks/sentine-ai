@@ -99,6 +99,15 @@ export interface TelemetryVector {
   windowBlur?: boolean;
   wifiCollusionFlag?: boolean;
   wifiCollusionDetail?: string;
+  cameraBlocked?: boolean;
+  cameraLost?: boolean;
+  frameFreezeDetected?: boolean;
+  fullscreenExit?: boolean;
+  tabSwitchCount?: number;
+  copyCount?: number;
+  pasteCount?: number;
+  idleTimeSeconds?: number;
+  rapidAnswerChange?: boolean;
 }
 
 export interface VisionSignal {
@@ -120,6 +129,10 @@ export interface BehaviorSignal {
   mouseRoboticScore: number;
   largePasteFlag: boolean;
   windowBlurFlag: boolean;
+  fullscreenExitFlag?: boolean;
+  tabSwitchCount?: number;
+  idleTimeFlag?: boolean;
+  rapidAnswerFlag?: boolean;
 }
 
 export interface CollusionSignal {
