@@ -1,0 +1,222 @@
+%============================================================================
+% prelude.tex
+%   - titlepage
+%   - table of contents, list of tables and list of figures
+%   - abstract
+%============================================================================
+\clearpage%
+\pagenumbering{roman}  % This makes the page numbers Roman (i, ii, etc)
+%--------------------------------------------------------------------%
+% TITLE PAGE
+%   - define \title{} \author{} \date{}
+
+\title{\LARGE SentinelAI: A Multi-Agent Framework for Real-Time AI-Powered Online Examination Proctoring}
+\author{Tanisha Chauhan (23MT7027) \\{} Atharva Salunkhe (23MT7008) \\{} Sulaiman Khan (23MT7015)}
+% Add or remove "\\{} [Author Name] ([Roll No.])" lines above for each author
+\date{August 2026}
+
+\department{Computer Science \& Engineering}
+
+%    - Set the guide's name
+\setguide{Dr. Dipti Jadhav}
+%    - Set the coguide's name (if you have one)
+%\setcoguide{Mr. ABC}
+
+%   - once the above are defined, use \maketitle to generate the titlepage
+\maketitle
+
+%--------------------------------------------------------------------
+\cleardoublepage
+\begin{center}
+\includegraphics[width=8cm]{logo.eps}\\
+%Ramrao Adik Education Society's\\
+\large {\textbf{Ramrao Adik Institute of Technology}}\\
+\small(Under the ambit of D. Y. Patil Deemed to be University)\\
+Dr. D. Y. Patil Vidyanagar,Sector 7, Nerul, Navi Mumbai 400
+706.\\\vspace{0.3in}
+\textbf{\begin{Huge}Certificate\end{Huge}}
+\end{center}
+\vspace{0.05in}
+\begin{center}
+\large This is to certify that, the Mini Project-II titled
+\vspace{0.15in}\\\textbf{\lq\lq  SentinelAI: A Multi-Agent Framework for Real-Time AI-Powered Online Examination Proctoring \rq\rq} \\
+\vspace{0.1in}is a bonafide work done by\vspace{0.15in}
+\\\textbf {Tanisha Chauhan (23MT7027) \\{} Atharva Salunkhe (23MT7008) \\{} Sulaiman Khan (23MT7015)} \\\vspace{0.1in} and is submitted in the partial
+fulfillment of
+the requirement for the degree of \vspace{0.15in} \\\textbf{ Bachelor of Technology} \vspace{0.05in}\\\textbf{ Computer Science \& Engineering} \\to the \\\textbf{D. Y. Patil Deemed to be University}.\\
+
+%\includegraphics{university.eps}
+
+ \vspace{0.2in}
+%
+%\begin{tabular}{cccc}
+%      \rule{5cm}{1sp}
+%      \\
+%       Guide \\\\
+%      \rule{5cm}{1sp}  & \rule{5cm}{1sp}   & \rule{5cm}{1sp} \\
+%      Project Coordinator      & Head of Department         & Principal \\
+%
+%
+%    \end{tabular}
+%\vspace{1in}
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}ccc@{}}
+      \rule{4.0cm}{1sp} &                     & \rule{4.0cm}{1sp} \\
+      Supervisor        &                     & Co-Supervisor \\[0.65in]
+      \rule{4.0cm}{1sp} & \rule{4.0cm}{1sp}   & \rule{4.0cm}{1sp} \\
+      Mini Project-I/II Coordinator & Head of Department & Principal \\
+    \end{tabular*}
+\end{center}
+
+
+
+
+
+
+
+
+
+ %-----------------------------------------------------------------
+ \cleardoublepage
+ %--------------------------------------------------------------------%
+\begin{center}
+{\textbf{\Large Mini- Project-I/II Approval for MBA.Tech}}
+\end{center}
+\vspace{0.2in}
+
+This is certify the Mini- Project-I/II entitled `` \textbf{SentinelAI: A Multi-Agent Framework for Real-Time AI-Powered Online Examination Proctoring}'' is a bonafide work done by \textbf{Tanisha Chauhan (23MT7027), Atharva Salunkhe (23MT7008) and Sulaiman Khan (23MT7015)} under the supervision of \textbf{Dr. Dipti Jadhav.} This Mini- Project-I/II has been approved for the award of Mini Project-I/II in MBA Tech (AI \& ML), D. Y. Patil Deemed to be University.
+
+\vspace{0.65in}
+% Please add the following required packages to your document preamble:
+% \usepackage{multirow}
+\begin{table}[h]
+
+
+\begin{tabular}{llll}
+ &  & \textbf{Examiners:}         &        \\\\\\
+                     & \hspace{1.2in} & \multicolumn{2}{l}{1:  \rule{5cm}{1sp}} \\ \\
+                     &  & \multicolumn{2}{l}{2: \rule{5cm}{1sp}}  \\\\\\
+                     &  & \textbf{Supervisor:}        &        \\\\\\
+                     &  & \multicolumn{2}{l}{1: \rule{5cm}{1sp}}  \\\\\\
+                     &  & \multicolumn{2}{l}{2: \rule{5cm}{1sp}}  \\\\\\
+                     &  & \textbf{Principal:}         &        \\\\\\
+                     &  & \rule{4.5cm}{1sp}              &        \\\\\\\\
+Date : \rule{5cm}{1sp}  &  &                             &        \\\\\\
+Place : \rule{5cm}{1sp} &  &                             &       
+\end{tabular}
+\end{table}
+
+\newpage
+
+\noindent{\textbf{\begin{Huge}Declaration\end{Huge}}}\\ \\ \\
+I declare that this written submission represents my ideas in my own word and where others ideas or words have been included, I have adequately cited and referenced the original source. I also declare that I have adhered to all principles of academic honesty and integrity and have not misrepresented or fabricated or falsified any idea/data/fact/source in my submission. I understand that any violation of above will be cause for disciplinary action by institute and can also evoke penal action from the source which have thus not been properly cited or from whom proper permission has not been taken when needed.
+
+\vspace{0.65in}
+% Please add the following required packages to your document preamble:
+% \usepackage{multirow}
+\begin{table}[h]
+\centering
+
+\begin{tabular}{llll}
+   &  & \rule{7cm}{1sp}                         &  \\\\
+                       &  &   \multicolumn{2}{l}{\rule{7cm}{1sp}}        \\\\
+                        &  &   \multicolumn{2}{l}{\rule{7cm}{1sp}}        \\\\
+                       &  & \multicolumn{2}{l}{\rule{7cm}{1sp}}        \\\\
+                       &  & \textbf{(Name of student and Roll No.)} &  \\\\
+Date : \rule{5cm}{1sp} &  &                                         & 
+\end{tabular}
+\end{table}
+
+\newpage
+
+\noindent{\textbf{\begin{Huge}Acknowledgement\end{Huge}}}
+
+\vspace{0.4in}
+
+\noindent With great pleasure, we avail this opportunity to express our deep sense of gratitude to our guide Dr. Dipti Jadhav for her spirited guidance and inspiration. We have a deep sense of admiration for her innate goodness and inexhaustible enthusiasm which helped us to work in the right direction to attain the desired objective.
+
+\medskip
+
+\noindent We are also thankful for her valuable time and help in all possible ways towards the successful completion of this work. We thank all those who have contributed directly or indirectly to this work.
+
+\medskip
+
+\noindent We are thankful to our Principal Dr. M. D. Patil for his support and encouragement. We extend thanks to our friends who have done many nice things for us. We cannot end without thanking our families for their constant encouragement and support throughout this journey.
+
+
+
+% ABSTRACT
+\begin{abstract}
+Online examinations have become the primary mode of assessment in modern educational institutions, yet ensuring academic integrity in remote, unsupervised environments remains a critical and largely unsolved challenge. Traditional rule-based proctoring tools produce high false-positive rates, lack explainability, and are unable to adapt to nuanced multi-modal cheating behaviours in real time.
+
+This project presents \textbf{SentinelAI} --- a production-grade, multi-agent AI framework for real-time online examination proctoring. SentinelAI coordinates a pipeline of specialised AI agents including a \textit{Vision Guard} (YOLOv11-based face and object detection), a \textit{Gaze Tracker}, an \textit{Acoustic VAD} (Voice Activity Detector), a \textit{Behavioral Biometrics Analyst}, and a \textit{Decision Orchestrator} to produce a calibrated, explainable risk score for every active exam session.
+
+The system is deployed as a cloud-native TypeScript monorepo (Turborepo) exposing three role-specific frontends (Student Portal, Proctor Command Centre, Admin Dashboard) backed by a REST/WebSocket API gateway and a microservices architecture. Empirical evaluation on simulated exam sessions demonstrates a violation detection precision of 93\% and recall of 89\%, with a median end-to-end alert latency of less than 800\,ms. The cryptographic audit ledger provides tamper-proof, post-exam compliance records for institutional review.\\ \\
+\textbf{Keywords:} \\{}
+AI Proctoring, Multi-Agent Systems, YOLOv11, Real-Time Risk Scoring, Explainable AI, Behavioral Biometrics, Online Examination Integrity, Microservices
+
+\end{abstract}
+
+%--------------------------------------------------------------------%
+% CONTENTS, TABLES, FIGURES
+ %\listoftables
+ %\listoffigures
+ \tableofcontents
+ \listoffigures
+\listoftables
+
+%----------------------------------------------------
+% % % % % % % % % % % % % % % % % % %
+ \cleardoublepage
+\thispagestyle{empty}
+
+
+      \noindent{\textbf{\begin{Huge}Abbreviations\end{Huge}}}\\ \\ \\
+
+AI \hspace{1in} Artificial Intelligence\\
+
+API \hspace{1in} Application Programming Interface\\
+
+CV \hspace{1in} Computer Vision\\
+
+DNN \hspace{1in} Deep Neural Network\\
+
+FPS \hspace{1in} Frames Per Second\\
+
+HTTP \hspace{1in} Hypertext Transfer Protocol\\
+
+IoU \hspace{1in} Intersection over Union\\
+
+ML \hspace{1in} Machine Learning\\
+
+REST \hspace{1in} Representational State Transfer\\
+
+VAD \hspace{1in} Voice Activity Detection\\
+
+WebRTC \hspace{1in} Web Real-Time Communication\\
+
+WebSocket \hspace{1in} Web Socket Protocol\\
+
+XAI \hspace{1in} Explainable Artificial Intelligence\\
+
+YOLO \hspace{1in} You Only Look Once\\
+
+
+
+% % % % % % % % % % % % % % % % % %----------------%
+%  Single counter for theorems and theorem-like environments:
+\newtheorem{theorem}{Theorem}[chapter]
+\newtheorem{assertion}[theorem]{Assertion}
+\newtheorem{claim}[theorem]{Claim}
+\newtheorem{conjecture}[theorem]{Conjecture}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{example}[theorem]{Example}
+\newtheorem{figger}[theorem]{Figure}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{prop}[theorem]{Proposition}
+\newtheorem{remark}[theorem]{Remark}
+
+%--------------------------------------------------------------------%
+% Make the page numbers Arabic (1, 2, etc)
+\cleardoublepage%
+\pagenumbering{arabic}

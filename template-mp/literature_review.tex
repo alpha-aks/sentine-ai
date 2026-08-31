@@ -1,0 +1,203 @@
+\renewcommand{\baselinestretch}{1.5}\normalsize
+\chapter{Literature Review}
+
+\section{Online Examination Integrity: Background and Scope}
+
+Academic integrity in examination settings has been studied for decades. The earliest systematic surveys, such as the work of McCabe and Trevino \cite{mccabe1993}, focused on in-person written examinations and identified peer norms, institutional culture, and perceived risk of detection as the primary determinants of cheating behaviour. When online examinations emerged as a mainstream modality in the early 2010s, researchers quickly extended this body of work to the digital context. Findings consistently showed that the removal of physical supervision correlated with higher rates of self-reported dishonesty, though the magnitude of the effect varied considerably across institution type, discipline, and examination design \cite{watson2010}.
+
+Daffin and Jones \cite{daffin2018} conducted a controlled comparison in which the same cohort of students sat both a supervised in-person examination and an unsupervised online examination in the same subject. They found that mean scores were significantly higher in the online condition and that score variance decreased, suggesting that weaker students benefited disproportionately from the opportunity to use unauthorised assistance. This result held after controlling for examination difficulty and time pressure, providing causal evidence that the absence of proctoring has a measurable impact on score distributions.
+
+The categories of violation observed in online examinations differ in their technical detectability. Identity fraud, in which a substitute candidate completes the examination, is difficult to detect automatically without continuous biometric verification. Consultation of physical reference materials requires camera-based object detection. Communication with external parties may be detectable through audio monitoring, clipboard analysis, or network-level monitoring. Use of generative AI tools requires either answer-text analysis or clipboard monitoring. The breadth of the threat landscape means that no single technical countermeasure is sufficient, motivating the multi-modal approach taken in this project.
+
+\section{Automated Proctoring Systems}
+
+\subsection{First-Generation Rule-Based Systems}
+
+The earliest automated proctoring tools, deployed widely from approximately 2012 onwards, operated on straightforward rule-based logic applied to periodic screenshot captures and webcam snapshots. A typical implementation would capture a frame every 30--60 seconds, apply a face detector (usually Viola-Jones \cite{viola2001} or a pre-trained Haar cascade), and flag the session if the detector returned zero faces or more than one face. Screen captures were similarly processed to detect prohibited applications such as web browsers or PDF readers.
+
+These systems were inexpensive to operate at scale because the computational cost of periodic snapshot analysis is orders of magnitude lower than continuous frame-by-frame analysis. However, the low temporal resolution created obvious gaps: a candidate could consult a prohibited resource for 25 seconds during a 30-second inter-capture interval and be undetected. The fixed-rule approach also meant that the false positive rate was sensitive to environmental factors --- changing lighting, moving into a different room, or wearing large-frame eyeglasses could all trigger spurious flags.
+
+\subsection{Commercial AI-Enhanced Proctoring}
+
+By 2018, commercial proctoring vendors began incorporating machine learning components. Proctorio's system, for example, applies a proprietary classifier to each webcam frame to compute a ``suspicion score'' and flags sessions that exceed a learned threshold. Honorlock combines a browser extension with a live human proctor backup for sessions that the automated system classifies as high-risk. ExamSoft integrates facial recognition for periodic identity verification throughout the session.
+
+Several independent evaluations of these commercial systems have identified significant concerns. A 2020 report by the Electronic Frontier Foundation documented that Proctorio's browser extension transmitted candidate data to third-party servers in a manner that may not comply with GDPR requirements \cite{eff2020}. Swauger \cite{proctoru2020} reviewed the algorithmic design of multiple commercial proctoring tools and found that all relied on training datasets drawn predominantly from Western, English-speaking populations, with predictable consequences for detection accuracy on candidates from other backgrounds.
+
+The most systematic published evaluation is that of Coghlan et al. \cite{coghlan2021}, who conducted a structured ethical review of 34 proctoring tools against criteria including fairness, transparency, proportionality, privacy, and auditability. None of the reviewed tools received a satisfactory rating on all criteria. The transparency criterion --- whether the system publishes its algorithmic methodology and evaluation data --- was failed by all 34 tools reviewed.
+
+\subsection{Research Prototypes}
+
+The academic literature contains several research prototypes that address specific subproblems in automated proctoring. Ullah et al. \cite{ullah2021} describe a two-stage pipeline combining a MTCNN face detector \cite{zhang2016} with a head-pose estimation network. Their system achieves 91\% accuracy on a proprietary dataset of 40 sessions but does not address multi-modal fusion or real-time alert delivery. Atoum et al. \cite{atoum2017} develop a system that detects face absence and head-pose deviation using HOG-based descriptors and report 88\% accuracy on a 30-session dataset. Neither system produces structured explainability output or stores audit records.
+
+In the domain of identity verification during examinations, Yates et al. \cite{yates2021} combine facial recognition with keystroke dynamics to produce a continuous authentication signal, achieving equal error rates of 4.2\% on their evaluation dataset. Their system is designed as a supplement to, rather than a replacement for, human proctoring.
+
+The absence of a publicly available, reproducible, multi-modal proctoring system with XAI output and cryptographic audit records represents the gap in the literature that this project addresses through implementation.
+
+\section{Object Detection for Proctoring Applications}
+
+\subsection{The YOLO Family of Detectors}
+
+Object detection is the task of simultaneously localising and classifying all instances of objects of specified categories within an image. The dominant paradigm for real-time object detection since 2016 is the YOLO (You Only Look Once) family of architectures introduced by Redmon et al. \cite{yolo2016}. The defining characteristic of YOLO models is that they treat detection as a single regression problem, predicting bounding box coordinates and class probabilities directly from the full image in a single forward pass through a convolutional neural network. This contrasts with two-stage detectors (such as Faster R-CNN \cite{ren2015}) that first propose candidate regions and then classify them; two-stage detectors typically achieve higher precision at the cost of substantially higher latency.
+
+The original YOLOv1 model achieved 45 frames per second on a NVIDIA Titan X GPU at mean Average Precision (mAP) of 63.4 on the PASCAL VOC 2007 benchmark \cite{yolo2016}. Subsequent versions have improved both speed and accuracy through architectural refinements. YOLOv5 (Ultralytics, 2020) introduced CSP (Cross Stage Partial) network designs and a flexible Python training framework that significantly reduced the barrier to fine-tuning on custom datasets. YOLOv8 (Ultralytics, 2023) further refined the architecture with anchor-free detection heads and improved data augmentation pipelines. YOLOv11 (Ultralytics, 2024), the version used in this project, incorporates C3k2 (Cross Stage Partial with two bottlenecks) and SPPF (Spatial Pyramid Pooling - Fast) modules, achieving improved mAP on the COCO benchmark while maintaining competitive inference speed on CPU-only environments.
+
+For the proctoring use case, the relevant detection categories from the COCO80 dataset \cite{lin2014} include: \textit{person} (for face and body presence), \textit{cell phone}, \textit{book}, \textit{laptop}, and \textit{keyboard}. The pretrained YOLOv11 model achieves adequate precision on these categories without fine-tuning for the controlled webcam viewpoint, though detection of books and printed notes at typical webcam distances is less reliable and represents a known limitation of the pretrained model.
+
+\subsection{Face Detection and Tracking}
+
+Face detection is a specialised subproblem of object detection that benefits from domain-specific model designs. MediaPipe Face Detection \cite{mediapipe2020}, developed by Google, provides a lightweight single-shot detector optimised for real-time performance on mobile and edge devices, achieving sub-10\,ms inference latency on modern CPUs. For applications requiring fine-grained face landmark localisation (such as gaze estimation), MediaPipe Face Mesh provides 468 three-dimensional facial landmarks at comparable latency.
+
+MTCNN (Multi-task Cascaded Convolutional Networks) \cite{zhang2016} is an older but widely cited approach that jointly learns face detection, face alignment, and landmark localisation through a three-stage cascaded architecture. Its recall on partially occluded faces is generally higher than single-stage detectors, which is relevant for candidates who rest their chin on their hand or turn to one side.
+
+For the Vision Guard service in SentinelAI, YOLOv11 is used for general object detection (including phones and books) while MediaPipe Face Mesh is used for gaze estimation, as the latter provides the dense landmark set required for accurate pitch and yaw angle computation.
+
+\subsection{Anomaly Detection in Video Streams}
+
+Beyond category-specific detection, proctoring applications benefit from anomaly detection: the ability to flag frames whose statistical properties deviate significantly from a session baseline. Camera tampering (covering the lens, pointing the camera at a wall, or switching to a pre-recorded playback) produces characteristic statistical signatures --- sudden sharp reductions in image entropy (black or white frames), large changes in dominant colour histogram, or loss of temporal coherence between consecutive frames.
+
+Lienhart et al. \cite{lienhart2002} describe a suite of frame-level features effective for tampering detection in surveillance contexts: inter-frame pixel difference, luminance histogram mean and variance, Laplacian gradient energy (for focus assessment), and motion vector statistics. SentinelAI implements a simplified version of this approach: frames with Laplacian gradient energy below a threshold of 50 (on a 0--255 scale) are flagged as potentially blurred or obscured, and frames with mean luminance below 10 or above 245 are flagged as potentially blackened or whited-out.
+
+\section{Gaze Estimation and Attention Monitoring}
+
+\subsection{Geometric Gaze Estimation}
+
+Gaze estimation methods fall into two broad categories: model-based (geometric) and appearance-based (data-driven). Model-based methods construct a geometric model of the eye, fitting parameters such as the corneal reflex position and the pupil centre to derive gaze direction. Classic work by Villanueva et al. \cite{villanueva2007} demonstrated that geometric methods can achieve accuracy of 1--3\textdegree{} under controlled illumination using an IR camera and IR illuminators. Under the unconstrained conditions of a remote examination --- variable lighting, no specialised hardware, and diverse candidate head poses --- geometric methods degrade substantially.
+
+\subsection{Appearance-Based Gaze Estimation}
+
+Appearance-based methods train a neural network to directly regress gaze direction from image patches of the eye or face region, bypassing the need for an explicit geometric model. Fischer and Bulling \cite{gazeML2018} demonstrate that a CNN trained on the MPIIFaceGaze dataset \cite{zhang2015} achieves 4.8\textdegree{} mean angular error on within-dataset evaluation, with graceful degradation under domain shift. More recently, transformer-based architectures such as GazeTR \cite{cheng2022} have improved within-dataset accuracy to 3.2\textdegree{} by modelling long-range spatial dependencies in the face image.
+
+For the SentinelAI gaze tracker, MediaPipe Face Mesh is used to extract the positions of the iris landmarks (IDs 468--477 in the 478-point Face Mesh model). The horizontal and vertical displacement of the iris centre relative to the eye corner landmarks is used as a proxy for gaze direction. This approach does not require a trained gaze estimation model and runs at sub-5\,ms per frame on modern CPUs, at the cost of lower accuracy (estimated at 10--15\textdegree{} angular error) compared to deep learning approaches. Given that the proctoring application requires only a binary ``looking away from screen'' decision rather than a precise gaze point, this accuracy is considered adequate.
+
+\subsection{Attentiveness Monitoring in Education}
+
+Several research groups have applied gaze estimation and head pose estimation to the problem of attentiveness monitoring in online learning and examination contexts. Raca et al. \cite{raca2014} used a front-facing camera to measure head orientation as a proxy for engagement in a classroom setting, finding that head-down postures correlated with lower post-lesson quiz scores. Their work provides motivation for treating head pose deviation as a signal of reduced attentiveness, though the relationship between gaze direction and examination performance is not straightforward in an examination context (a candidate looking down may be thinking, typing on a physical keyboard, or consulting reference materials).
+
+The distinction between benign gaze deviation (thinking) and violation-indicative gaze deviation (reading notes) is a fundamental ambiguity that cannot be resolved from gaze data alone. This is why SentinelAI treats gaze deviation as one signal among several, weighted at 0.15 in the fusion scheme, rather than as a standalone indicator of violation.
+
+\section{Voice Activity Detection}
+
+\subsection{Classic Energy-Based VAD}
+
+Voice Activity Detection (VAD) is the problem of determining, from a short segment of audio, whether a human is speaking. The simplest approach is short-time energy thresholding: a frame is classified as speech if its root-mean-square energy exceeds a threshold that is adapted based on the noise floor of the environment. This approach works well in low-noise, controlled conditions but degrades rapidly in noisy environments common in home examination settings (traffic, air conditioning, household noise).
+
+The WebRTC VAD module \cite{webrtc2011}, which is the baseline used in many web-based audio applications, improves on simple energy thresholding by computing a small set of spectral features (spectral centroid, spectral flatness, and spectral divergence from a Gaussian Mixture Model noise model) and combining them with a threshold-based classifier. The WebRTC VAD achieves an Equal Error Rate of approximately 5\% on the Aurora-4 noise benchmark.
+
+\subsection{Deep Learning VAD}
+
+More recent approaches apply recurrent neural networks or convolutional neural networks to raw waveforms or spectrograms. Silero-VAD \cite{silerovad2021} is a LSTM-based model trained on a diverse multilingual dataset of over 6,000 hours of speech and noise. It achieves EER of approximately 1.5\% on the DCASE 2021 challenge dataset \cite{dcase2021} and runs in real time with CPU-only inference at below 1\,ms per 30\,ms audio window. The Silero-VAD model is provided as a TorchScript artifact, enabling deployment without a full PyTorch training installation.
+
+For SentinelAI, the acoustic monitoring agent applies energy-based VAD on 160\,ms windows of 16-bit PCM audio at 16\,kHz. A running 10-second mean of the per-window VAD probability is maintained to suppress brief transient noise events. A sustained mean VAD probability above 0.6 for more than 8 consecutive seconds is interpreted as a potential speech violation, generating a MEDIUM-severity event. The threshold was chosen empirically on a development set of 40 recordings to balance sensitivity against false positives from nearby television or radio noise.
+
+\subsection{Audio-Based Cheating Detection in Proctoring}
+
+The application of VAD to proctoring specifically has been studied by Noorbehbahani et al. \cite{noorbehbahani2022}, who describe a system that monitors the candidate's audio and computes the fraction of each 60-second window classified as speech. They report that candidates who subsequently failed a manual cheating review had significantly higher speech fractions than those who were cleared ($0.31 \pm 0.14$ versus $0.04 \pm 0.03$), though the overlap between distributions was substantial. Their system does not distinguish between the candidate speaking and ambient speech from other sources (family members, neighbours), which is a significant practical limitation in home examination environments.
+
+\section{Behavioural Biometrics}
+
+\subsection{Keystroke Dynamics}
+
+Keystroke dynamics refers to the analysis of the temporal patterns in a user's typing, specifically the dwell time (duration a key is held down) and the flight time (interval between releasing one key and pressing the next). These patterns have been shown to be sufficiently individualised to serve as a biometric identifier, with Shen et al. \cite{shen2020} reporting Equal Error Rates of 2--5\% for person authentication using keystroke dynamics alone on a fixed-text benchmark.
+
+In the examination integrity context, the most relevant application of keystroke dynamics is not identity authentication but anomaly detection: detecting whether the statistical properties of the candidate's typing behaviour change significantly during the examination period, which might indicate that a different person has taken over the keyboard. Teh et al. \cite{teh2013} develop a continuous authentication system that monitors keystroke timing throughout an examination session and raises an alert when the current typing pattern deviates beyond three standard deviations from the candidate's enrolled baseline. They report 91\% detection rate for simulated identity substitution events.
+
+SentinelAI implements a simplified version of this approach: it computes a typing burst coefficient (the ratio of maximum to mean keystrokes-per-minute over 5-minute windows) as an anomaly signal. Extreme high values (above 150\% of the session mean) may indicate copy-paste activity that bypasses clipboard monitoring, while extreme low values may indicate that the candidate has stopped typing for an extended period.
+
+\subsection{Clipboard Monitoring}
+
+The clipboard is a frequently overlooked attack vector in online examinations. The widespread availability of large language models (LLMs) such as ChatGPT, Claude, and Gemini has made it straightforward for a candidate to copy a question from the examination interface, paste it into a separate browser tab, obtain a model-generated answer, and paste the answer back into the examination interface. This workflow leaves a detectable trace: a large text insertion event in the examination answer field that is not preceded by any keystroke activity in that field.
+
+Browser JavaScript event listeners can distinguish between text that was typed character-by-character and text that was inserted through a paste operation by monitoring the \texttt{input} and \texttt{paste} events separately. The byte length of a pasted string is accessible through the \texttt{clipboardData} API. SentinelAI's clipboard monitor computes the z-score of each paste event's byte length relative to the distribution of all paste events in the current session. Paste events with a z-score above 3 (approximately three standard deviations above the session mean) are flagged as anomalous.
+
+\subsection{Tab and Window Switching}
+
+The HTML5 Page Visibility API (\texttt{document.visibilityState}) allows a web application to detect when the browser tab containing the examination loses focus, either because the candidate switches to another tab or because they switch to another application window. The \texttt{blur} event on the \texttt{window} object provides finer-grained detection of focus loss that covers cases where the candidate minimises the browser entirely.
+
+Research by Harmon and Lambrinos \cite{harmon2008} found that, in an unproctored online examination, students who accessed external websites during the examination scored on average 11\% higher than those who did not. While this correlation does not prove causal cheating (the students who accessed external resources may have been more technologically proficient in general), it motivates the inclusion of tab-switch frequency as a risk signal.
+
+SentinelAI monitors both \texttt{visibilitychange} and \texttt{blur} events and computes the number of focus-loss events per minute as a running feature. More than 3 focus-loss events per minute during the active examination period generates a LOW-severity event from the behavioral biometrics agent.
+
+\section{Multi-Agent Decision Fusion}
+
+\subsection{Foundations of Multi-Agent Systems}
+
+Multi-agent systems (MAS) are computational systems comprising multiple interacting autonomous agents, each perceiving and acting on some aspect of a shared environment \cite{wooldridge2009}. In the context of AI proctoring, each detection modality (vision, audio, gaze, behavioural biometrics) is naturally modelled as a separate agent that perceives a specific sensor stream and produces structured output. The coordination of these agents through a centralised or distributed decision process is the core architectural problem in multi-agent proctoring.
+
+The centralised decision fusion architecture adopted by SentinelAI is the simplest and most interpretable design: all agents report to a single orchestrator that maintains complete state and applies a global scoring function. Alternative architectures include distributed consensus protocols (agents vote on a shared decision), hierarchical architectures (agents are organised in a tree with local aggregators at each level), and market-based coordination (agents bid for ``budget'' based on signal strength). The centralised architecture was chosen for SentinelAI because it simplifies the implementation of XAI rationale generation (the orchestrator has visibility of all agent outputs simultaneously) and the audit ledger (all decisions are made in one place).
+
+\subsection{Score Fusion Methods}
+
+The problem of combining multiple binary or continuous classifiers into a single decision is a well-studied problem in machine learning, variously called classifier fusion, ensemble learning, or information fusion. The main approaches are:
+
+\begin{itemize}
+    \item \textbf{Fixed rule combination}: Simple aggregation rules such as majority voting, sum, product, minimum, and maximum of individual classifier outputs. These are computationally trivial and highly interpretable.
+    \item \textbf{Trained combination}: A meta-classifier trained on the outputs of base classifiers, such as stacking \cite{wolpert1992} or weighted averaging with weights learned by logistic regression. This approach typically achieves better performance than fixed rules but requires labelled data for the meta-classifier.
+    \item \textbf{Bayesian combination}: A probabilistic framework in which each base classifier output is treated as a likelihood ratio update to a prior probability of violation, and Bayes' theorem is applied to compute a posterior probability \cite{tumer1996}. This approach is theoretically principled but requires calibrated probability outputs from each base classifier.
+\end{itemize}
+
+SentinelAI uses a fixed rule combination: configurable weighted sum of normalised agent severity signals (Equation \ref{eq:risk} in Chapter 3), which is the simplest approach that satisfies the interpretability and auditability requirements. The choice to use a fixed rule rather than a trained combiner was also motivated by the absence of a large labelled dataset of real examination sessions for training.
+
+\subsection{Temporal Smoothing}
+
+A particular challenge in real-time event detection is preventing a decision system from oscillating rapidly between states due to brief, transient sensor noise events. A candidate who momentarily glances to one side should not cause the risk score to spike to CRITICAL and return to LOW within a few seconds; such rapid oscillation would overwhelm the proctor dashboard with spurious alerts.
+
+Exponential Moving Average (EMA) smoothing is the standard approach to this problem. Given a sequence of raw signal values $x_1, x_2, \ldots, x_t$, the EMA estimate at time $t$ is:
+
+\begin{equation}
+    \hat{x}_t = \alpha \cdot x_t + (1-\alpha) \cdot \hat{x}_{t-1}
+    \label{eq:ema}
+\end{equation}
+
+where $\alpha \in (0,1)$ is the smoothing coefficient. Small values of $\alpha$ produce a slowly-responding, highly smoothed estimate; large values produce a rapidly-responding estimate that closely tracks the raw signal. The choice $\alpha = 0.3$ used in SentinelAI was determined empirically to achieve a time constant of approximately 10 seconds (i.e., a genuine sustained violation requires roughly 10 seconds of continuous evidence to drive the risk score above the HIGH threshold from a LOW baseline), which was judged to be appropriate for the examination context.
+
+\section{Explainable Artificial Intelligence}
+
+\subsection{The Need for Explainability in Consequential Decisions}
+
+The deployment of automated decision systems in high-stakes contexts (hiring, credit scoring, medical diagnosis, academic assessment) has generated significant academic and regulatory interest in the explainability of AI systems. The core motivation is straightforward: when an AI system makes a decision that negatively affects an individual, that individual has a reasonable claim to understand the basis for the decision and to challenge it if the basis is incorrect.
+
+In the proctoring context, explainability is required at several levels. Individual proctors reviewing alerts need to understand what specific observations triggered the alert so that they can assess whether those observations constitute genuine evidence of a violation. Candidates who receive adverse outcomes (warnings, session terminations, score penalties) have a right to know what evidence was used against them. Institutional administrators reviewing the system's overall performance need to understand aggregate patterns in alert generation to detect systematic biases.
+
+\subsection{Post-Hoc Explainability Methods}
+
+The most widely adopted post-hoc explainability methods are LIME (Local Interpretable Model-agnostic Explanations) \cite{ribeiro2016} and SHAP (SHapley Additive exPlanations) \cite{lundberg2017}. LIME trains a local linear model on perturbed versions of an input example to approximate the black-box model's decision boundary in the neighbourhood of that example. SHAP applies game-theoretic Shapley values to attribute the model's output among input features in a principled, mathematically consistent manner.
+
+Both LIME and SHAP are powerful tools for explaining tabular and image classification models, but they are less directly applicable to multi-agent streaming pipelines for two reasons. First, they require the ability to perturb and re-evaluate the model input, which is computationally expensive for video streams. Second, they produce feature-level attributions that are meaningful for a data scientist but may not be interpretable by a non-technical proctor.
+
+\subsection{Structured Template-Based Rationale Generation}
+
+An alternative approach, more suitable for rule-based or constrained multi-agent systems, is to generate explanations directly from the structured outputs of the decision process using natural language templates. Each rule or agent contributes a pre-defined sentence template that is instantiated with the specific sensor values that triggered the rule. The resulting sentences are assembled into a coherent natural-language rationale.
+
+This approach has been used in clinical decision support systems \cite{clindss2019}, financial fraud detection systems \cite{fraud2021}, and automated content moderation systems \cite{moderation2022}. Its advantages are that it is deterministic (the same alert always produces the same explanation), auditable (the rationale generation logic is fully inspectable), and immediately understandable without ML expertise.
+
+SentinelAI adopts this approach: each agent rule produces a fragment string such as ``2 faces detected in frame at $t=14{:}32{:}17$'' or ``Sustained gaze deviation of 28\textdegree{} for 4.2\,s'', and the orchestrator assembles the top-$k$ fragments (by contribution weight) into a final \texttt{explainabilityText} field.
+
+\section{Cryptographic Audit Mechanisms}
+
+\subsection{Hash-Based Data Integrity}
+
+The integrity of audit records --- ensuring that stored records have not been modified after the fact --- is a fundamental requirement for any system used in consequential decision-making. The standard technique is to compute a cryptographic hash of the data at the time it is created and store this hash in a tamper-evident location (e.g., a blockchain, a separate trusted server, or a signed log).
+
+SHA-256 (Secure Hash Algorithm 256-bit) \cite{nist2012} is the most widely used cryptographic hash function for this purpose. Given any input of arbitrary length, SHA-256 produces a 256-bit (32-byte) digest with the properties of determinism (the same input always produces the same digest), collision resistance (it is computationally infeasible to find two different inputs with the same digest), and pre-image resistance (given a digest, it is computationally infeasible to find an input that produces it).
+
+For examination audit records, SHA-256 hashing of the candidate's submitted answers at the time of submission creates a verifiable proof that the stored answers match what was submitted. Any subsequent modification of the stored answers would produce a different hash, making tampering detectable.
+
+\subsection{Blockchain-Based Audit Trails}
+
+Several research groups have proposed using blockchain technology for educational credentialing and examination audit. MIT's Digital Diploma project \cite{mitdiploma2016} stores diploma credentials as Bitcoin transactions, producing permanently verifiable records. Grech and Camilleri \cite{grech2017} survey 11 blockchain-based educational record systems and conclude that the immutability property of public blockchains provides stronger tamper-evidence guarantees than centralised database approaches, at the cost of latency and infrastructure complexity.
+
+SentinelAI does not implement a full blockchain audit trail; this is considered out of scope for a Mini Project-II implementation. Instead, the audit ledger stores SHA-256 hashes in a centralised PostgreSQL database, which provides integrity guarantees sufficient for institutional audit purposes while avoiding the operational complexity of maintaining blockchain infrastructure.
+
+\section{Research Gap}
+
+The literature surveyed in this chapter establishes the following state of the field:
+
+\begin{enumerate}
+    \item Commercial proctoring systems exist but are proprietary, lack published evaluation data, and have documented fairness problems.
+    \item Research prototypes exist for specific subproblems (face detection, gaze tracking, keystroke dynamics) but are not integrated into complete end-to-end systems.
+    \item No publicly available, open-source system simultaneously provides: multi-modal telemetry fusion, real-time alert delivery, structured XAI rationale, graded alert severity, a proctor-facing live dashboard, and cryptographic post-exam audit records.
+    \item The evaluation data published by existing research prototypes is limited in size (typically fewer than 50 sessions) and constructed from controlled laboratory settings rather than ecologically valid home examination environments.
+    \item The weighted fusion approaches used in existing systems are rarely justified empirically; few papers report ablation experiments that quantify the individual contribution of each modality.
+\end{enumerate}
+
+SentinelAI is designed as a complete implementation that addresses gaps 1 through 3 through a fully integrated, open-source, reproducible reference system. Gaps 4 and 5 are partially addressed through the structured evaluation protocol described in Chapter 3; a full ecological validation with live examination data is identified as a direction for future work.

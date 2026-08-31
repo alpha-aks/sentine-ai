@@ -1,0 +1,188 @@
+% flowchart.tex — SentinelAI System Workflow Flowchart
+% Include this file with \include{flowchart} in final_disseratation.tex
+
+\renewcommand{\baselinestretch}{1.5}\normalsize
+\chapter*{System Workflow Flowchart}
+\addcontentsline{toc}{chapter}{System Workflow Flowchart}
+
+\vspace{0.3in}
+
+The following flowchart (Figure~\ref{fig:flowchart}) illustrates the end-to-end operational workflow of the SentinelAI system, from the moment a candidate initiates an examination session through telemetry capture, multi-agent analysis, risk score fusion, alert generation, proctor intervention, and final audit ledger generation.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+  %--- node styles ---
+  startstop/.style={
+    draw, ellipse, fill=csgreen!30, draw=csgreen, thick,
+    minimum width=2.4cm, minimum height=0.7cm,
+    font=\small\bfseries, align=center
+  },
+  process/.style={
+    draw, rectangle, rounded corners=3pt,
+    fill=csblue!15, draw=csblue, thick,
+    minimum width=4.2cm, minimum height=0.75cm,
+    font=\small, align=center
+  },
+  decision/.style={
+    draw, diamond, aspect=2.4,
+    fill=csorange!20, draw=csorange, thick,
+    font=\scriptsize\bfseries, align=center,
+    inner sep=1pt
+  },
+  agent/.style={
+    draw, rectangle, rounded corners=2pt,
+    minimum width=1.9cm, minimum height=0.8cm,
+    font=\scriptsize, align=center, thick
+  },
+  orch/.style={
+    draw, rectangle, rounded corners=4pt,
+    fill=yellow!10, draw=yellow!70!black, thick,
+    minimum width=5.0cm, minimum height=0.9cm,
+    font=\small\bfseries, align=center
+  },
+  risk/.style={
+    draw, rectangle, rounded corners=3pt,
+    minimum width=2.1cm, minimum height=0.75cm,
+    font=\scriptsize\bfseries, align=center, thick
+  },
+  action/.style={
+    draw, rectangle, rounded corners=3pt,
+    fill=csblue!10, draw=csblue!70, thick,
+    minimum width=2.2cm, minimum height=0.7cm,
+    font=\scriptsize, align=center
+  },
+  audit/.style={
+    draw, rectangle, rounded corners=3pt,
+    fill=csgreen!15, draw=csgreen!70!black, thick,
+    minimum width=4.0cm, minimum height=0.75cm,
+    font=\small, align=center
+  },
+  arr/.style={->, thick, gray!70},
+  every node/.style={font=\small}
+]
+
+%--- START ---
+\node[startstop]                       (start)  at (0, 0)    {START};
+
+%--- Session init ---
+\node[process,  below=0.45cm of start]  (init)   {Candidate Starts\\Exam Session};
+
+%--- Permission check ---
+\node[decision, below=0.5cm of init]    (perm)   {Permissions\\Granted?};
+
+%--- Permission denied ---
+\node[process,  right=1.8cm of perm,   fill=csred!15, draw=csred]
+                                         (denied) {Show Error\\Retry / Exit};
+
+%--- Telemetry capture ---
+\node[process,  below=0.55cm of perm]   (telem)  {Real-Time Telemetry Capture\\{\scriptsize Webcam 15\,FPS $|$ Audio 16\,kHz $|$ Browser Events}};
+
+%--- 5 Agents (row) ---
+\node[agent, below=0.6cm of telem, xshift=-4.8cm,
+      fill=csred!15, draw=csred]           (vg)  {Vision Guard\\{\tiny YOLOv11}};
+\node[agent, right=0.22cm of vg,
+      fill=csorange!20, draw=csorange]     (gz)  {Gaze\\Tracker\\{\tiny MediaPipe}};
+\node[agent, right=0.22cm of gz,
+      fill=violet!15, draw=violet]         (vad) {Acoustic\\VAD};
+\node[agent, right=0.22cm of vad,
+      fill=teal!15, draw=teal!70!black]    (bb)  {Behavioral\\Biometrics};
+\node[agent, right=0.22cm of bb,
+      fill=csblue!20, draw=csblue]         (cb)  {Clipboard\\Monitor};
+
+%--- Orchestrator ---
+\node[orch,  below=0.6cm of vad]           (orch) {Decision Orchestrator\\{\scriptsize $r = \sum w_i \cdot \hat{s}_i$\quad EMA smoothing $\alpha=0.3$}};
+
+%--- Risk threshold decision ---
+\node[decision, below=0.55cm of orch]      (thresh) {Risk Score\\Threshold?};
+
+%--- 4 Risk tier boxes ---
+\node[risk, below=0.65cm of thresh, xshift=-4.5cm,
+      fill=csgreen!20, draw=csgreen]        (low)  {LOW\\$r < 0.40$\\Monitor Only};
+\node[risk, right=0.3cm of low,
+      fill=yellow!25, draw=yellow!70!black] (med)  {MEDIUM\\$0.40 \leq r < 0.70$\\Log \& Flag};
+\node[risk, right=0.3cm of med,
+      fill=csorange!30, draw=csorange]      (high) {HIGH\\$0.70 \leq r < 0.85$\\Proctor Notified};
+\node[risk, right=0.3cm of high,
+      fill=csred!30, draw=csred]            (crit) {CRITICAL\\$r \geq 0.85$\\Immediate Action};
+
+%--- Proctor dashboard ---
+\node[process, below=0.6cm of high, xshift=1.5cm,
+      fill=csblue!20, draw=csblue]          (proctor) {Proctor Command Centre\\{\scriptsize Live Risk Feed + Camera Thumbnail}};
+
+%--- XAI review ---
+\node[process, below=0.5cm of proctor,
+      fill=csblue!10, draw=csblue!60]       (xai)  {Proctor Reviews\\XAI Evidence};
+
+%--- Action decision ---
+\node[decision, below=0.55cm of xai]        (actd) {Proctor\\Action?};
+
+%--- 3 action boxes ---
+\node[action, below=0.65cm of actd, xshift=-2.5cm] (dismiss)  {Dismiss\\(False Positive)};
+\node[action, below=0.65cm of actd]                (warn)     {Send Warning\\to Candidate};
+\node[action, below=0.65cm of actd, xshift=2.5cm]  (term)     {Terminate\\Session};
+
+%--- Audit ledger ---
+\node[audit, below=0.65cm of warn]           (audit)  {Sentinel Receipt\\SHA-256 Audit Ledger};
+
+%--- END ---
+\node[startstop, below=0.45cm of audit]      (stop)   {END};
+
+%=== ARROWS ===
+% Main flow
+\draw[arr] (start)  -- (init);
+\draw[arr] (init)   -- (perm);
+\draw[arr] (perm)   -- node[left,  font=\scriptsize]{YES} (telem);
+\draw[arr] (perm)   -- node[above, font=\scriptsize]{NO}  (denied);
+
+% Telemetry to agents
+\draw[arr] (telem.south) -- ++(0,-0.2) -| (vg.north);
+\draw[arr] (telem.south) -- ++(0,-0.2) -| (gz.north);
+\draw[arr] (telem.south) -- ++(0,-0.2) -| (vad.north);
+\draw[arr] (telem.south) -- ++(0,-0.2) -| (bb.north);
+\draw[arr] (telem.south) -- ++(0,-0.2) -| (cb.north);
+
+% Agents to orchestrator
+\draw[arr] (vg.south)  |- (orch.west);
+\draw[arr] (gz.south)  -- ++(0,-0.15) -| (orch.north);
+\draw[arr] (vad.south) -- (orch.north);
+\draw[arr] (bb.south)  -- ++(0,-0.15) -| (orch.north);
+\draw[arr] (cb.south)  |- (orch.east);
+
+% Orchestrator to threshold
+\draw[arr] (orch)   -- (thresh);
+
+% Threshold to risk tiers
+\draw[arr] (thresh.south) -- ++(0,-0.2) -| (low.north);
+\draw[arr] (thresh.south) -- ++(0,-0.2) -| (med.north);
+\draw[arr] (thresh.south) -- ++(0,-0.2) -| (high.north);
+\draw[arr] (thresh.south) -- ++(0,-0.2) -| (crit.north);
+
+% HIGH + CRITICAL to proctor
+\draw[arr] (high.south) |- (proctor.west);
+\draw[arr] (crit.south) |- (proctor.east);
+
+% Proctor flow
+\draw[arr] (proctor) -- (xai);
+\draw[arr] (xai)     -- (actd);
+
+% Action branches
+\draw[arr] (actd.south) -- ++(0,-0.2) -| (dismiss.north);
+\draw[arr] (actd.south) -- (warn.north);
+\draw[arr] (actd.south) -- ++(0,-0.2) -| (term.north);
+
+% All actions → audit
+\draw[arr] (dismiss.south) |- (audit.west);
+\draw[arr] (warn.south)    -- (audit.north);
+\draw[arr] (term.south)    |- (audit.east);
+
+% LOW and MEDIUM also loop to audit
+\draw[arr] (low.south)  -- ++(0,-0.3) -- ++(-2.0,0) |- (audit.west);
+\draw[arr] (med.south)  -- ++(0,-0.2) -- ++(-1.0,0) |- (audit.west);
+
+\draw[arr] (audit) -- (stop);
+
+\end{tikzpicture}
+\caption{End-to-end system workflow flowchart for SentinelAI. The flowchart covers: session initialisation and permission checking, real-time multi-modal telemetry capture, parallel processing by five specialised AI agents, weighted fusion and EMA smoothing by the Decision Orchestrator, threshold-based alert tier assignment, proctor review of XAI evidence, proctor intervention actions, and final Sentinel Receipt generation for the cryptographic audit ledger.}
+\label{fig:flowchart}
+\end{figure}

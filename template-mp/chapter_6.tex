@@ -1,0 +1,127 @@
+\renewcommand{\baselinestretch}{1.5}\normalsize
+\chapter{Conclusion and Future Work}
+
+\section{Summary of the Project}
+
+This project set out to design, implement, and evaluate a multi-agent AI system for real-time online examination proctoring that simultaneously satisfies requirements for multi-modal detection, real-time alert delivery, structured explainability, calibrated risk scoring, and cryptographic auditability. The resulting system, SentinelAI, consists of six specialised AI detection agents coordinated by a Decision Orchestrator, three role-specific web frontend applications, a REST and WebSocket API gateway, and a PostgreSQL-backed audit ledger, all organised as a Turborepo monorepo.
+
+\subsection{Achievement of Research Objectives}
+
+Each of the ten research objectives stated in Chapter 1 was addressed as follows:
+
+\begin{table}[h]
+    \centering
+    \caption{Achievement summary for the ten research objectives.}
+    \begin{tabular}{@{}llp{7cm}@{}}
+        \toprule
+        Objective & Status & Outcome \\
+        \midrule
+        O1 --- Architecture           & Achieved & Turborepo monorepo with 6 agents, 4 frontends, 3 backend services \\
+        O2 --- Vision detection       & Achieved & YOLOv11-based Vision Guard; 5 rule categories; face-detection latency 68\,ms \\
+        O3 --- Gaze estimation        & Partially & MediaPipe Face Mesh gaze proxy; 71\% precision; known ambiguity limitation \\
+        O4 --- Audio monitoring       & Achieved & Energy-based VAD; 87\% precision; 22\,ms latency \\
+        O5 --- Behavioral biometrics  & Achieved & Clipboard z-score, tab-switch counter, keystroke burst detector \\
+        O6 --- Decision orchestration & Achieved & Weighted EMA fusion; 4-tier alert levels; 720\,ms median latency \\
+        O7 --- XAI rationale          & Achieved & Template-based rationale assembly; rated informative in all 35 alert sessions \\
+        O8 --- Proctor dashboard      & Achieved & Real-time WebSocket dashboard; candidate grid; alert feed; action controls \\
+        O9 --- Audit ledger           & Achieved & SHA-256 submission hashing; full alert and action log; 100\% receipt verification \\
+        O10 --- Full-stack integration & Achieved & Fully runnable monorepo with documented build and run procedures \\
+        \bottomrule
+    \end{tabular}
+    \label{tab:objectives}
+\end{table}
+
+\subsection{Key Quantitative Outcomes}
+
+The principal quantitative outcomes of the project are:
+
+\begin{itemize}
+    \item \textbf{Detection performance}: Fused pipeline F1-score of 0.910 (precision 93\%, recall 89\%) on the held-out 40-session evaluation set.
+    \item \textbf{Alert latency}: Median end-to-end latency of 720\,ms, with 88\% of alerts delivered within the 1000\,ms target.
+    \item \textbf{Audit integrity}: 100\% of Sentinel Receipts passed all three verification checks (hash integrity, alert completeness, action completeness).
+    \item \textbf{Ablation results}: Each detection agent contributes positively to fused pipeline F1-score, with the Clipboard Monitor contributing the largest incremental gain ($+$0.012 F1) and the Gaze Tracker the smallest ($+$0.001 F1).
+    \item \textbf{False positive rate}: 7.2\% per clean session on the held-out test set; the largest single source of false positives is gaze deviation triggered by keyboard usage.
+\end{itemize}
+
+\section{Discussion}
+
+\subsection{Architecture Design Decisions and Trade-offs}
+
+The decision to implement the Decision Orchestrator as a module within the API gateway process rather than as a separate microservice simplified state management but at the cost of fault tolerance: a crash of the API gateway process would reset all in-memory session states. In a production deployment, this trade-off would need to be revisited; the session state map would be externalised to Redis, and the orchestrator would be deployed as a separate process with its own fault isolation boundary.
+
+The choice of weighted linear fusion over a trained meta-classifier reflects the constraint imposed by the small evaluation dataset (200 sessions). Linear fusion with configured weights is less expressive than a trained combiner but is far more interpretable and does not require held-out labelled data for meta-classifier training. The ablation study confirms that the fixed-weight linear fusion achieves satisfactory performance given the available data; whether a trained combiner would yield meaningfully better performance on a larger, more diverse dataset is an open question.
+
+The use of a Python sidecar for YOLOv11 inference (rather than a native TypeScript implementation) introduces inter-process communication overhead (approximately 5--10\,ms per frame for stdin/stdout serialisation) and complicates deployment (both Node.js and Python runtimes must be available). However, the Ultralytics Python SDK provides a substantially more mature and better-maintained interface to YOLOv11 than any available TypeScript binding, and the inference latency is dominated by the neural network computation (62\,ms) rather than the IPC overhead.
+
+\subsection{Comparison with Related Work}
+
+Compared to the research prototypes reviewed in Chapter 2, SentinelAI provides broader coverage (six detection modalities versus one or two in most prior work), a complete end-to-end system (including frontends and audit ledger, which are absent from published research prototypes), and structured XAI output. The achieved F1-score of 0.910 is higher than the 0.867 reported by Ullah et al. \cite{ullah2021} for their two-stage vision-only pipeline on their proprietary dataset, though direct comparison is not possible because the datasets differ.
+
+Compared to commercial proctoring tools, SentinelAI is fully open-source and reproducible, produces structured natural-language explainability rationale for every alert, and stores cryptographically verifiable audit records. However, it lacks the large-scale real-world training data and the human proctor backup infrastructure that commercial products provide.
+
+\subsection{Limitations}
+
+The following limitations of the current implementation are acknowledged:
+
+\begin{itemize}
+    \item \textbf{Evaluation dataset}: The 200-session evaluation dataset was constructed from scripted simulations rather than real examination sessions. The diversity of the simulation (different individuals, home environments, and lighting conditions) partially mitigates this concern, but ecological validity cannot be confirmed without a live pilot deployment.
+    \item \textbf{Gaze tracker accuracy}: The MediaPipe Face Mesh iris landmark approach provides only a coarse proxy for gaze direction (estimated angular error 10--15\textdegree) and does not account for head pose. A full gaze estimation pipeline using a trained appearance-based model would improve accuracy but at the cost of additional computational overhead.
+    \item \textbf{Reference material detection}: The YOLOv11 pretrained model does not reliably detect printed notes or reference sheets placed outside the primary camera field of view (e.g., in the candidate's lap or to the side). This is a structural limitation that cannot be addressed by model improvement alone without hardware changes (secondary cameras, wider field of view).
+    \item \textbf{Identity verification}: SentinelAI does not implement automated identity verification (facial recognition against a registered photograph). A complete proctoring solution would include this component.
+    \item \textbf{AI-generated text detection}: The system does not attempt to detect AI-generated text in candidate answers. As large language models become more capable and widely accessible, this gap represents an increasing vulnerability.
+    \item \textbf{Single-language support}: The XAI rationale templates and all frontend text are in English only.
+    \item \textbf{Bandwidth requirements}: Streaming 15\,FPS webcam frames at 640$\times$480 resolution requires approximately 1\,Mbps sustained upload bandwidth per session. Students in areas with poor internet connectivity may experience degraded proctoring coverage or be unable to participate at all.
+    \item \textbf{In-memory session state}: As noted above, the orchestrator's in-memory session state is not replicated, meaning a backend restart during an examination would lose all accumulated risk score history.
+\end{itemize}
+
+\section{Future Work}
+
+\subsection{Improved Gaze Estimation}
+
+Replacing the MediaPipe iris landmark proxy with a full appearance-based gaze estimation model (such as GazeTR \cite{cheng2022} or a fine-tuned version of L2CS-Net \cite{abdelrahman2023}) would substantially improve gaze tracking accuracy and reduce the false positive rate from keyboard usage. The primary practical constraint is inference latency: the gaze model must complete within the 67\,ms frame interval to avoid accumulating backpressure in the frame buffer. Quantisation or knowledge distillation of a full gaze model to achieve this latency budget is a tractable engineering project.
+
+\subsection{AI-Generated Text Detection}
+
+With the widespread availability of large language models, detecting AI-generated content in candidate answers has become one of the most pressing open problems in academic integrity. Current approaches (statistical perplexity-based detectors, watermarking schemes) have known weaknesses: perplexity-based detectors have high false positive rates for non-native English writers, and watermarking requires cooperation from the LLM provider. Integrating an answer-text analysis module into SentinelAI that raises a supplementary flag for statistically anomalous answer patterns (e.g., unusually high semantic similarity to known LLM outputs) would address this gap.
+
+\subsection{Reinforcement Learning for Adaptive Weight Tuning}
+
+The current fixed-weight fusion scheme assigns constant weights to each agent throughout an examination session. In practice, the reliability of different signals varies with environmental conditions: in a brightly lit environment, vision-based signals are more reliable; in a noisy environment, VAD signals are less reliable. A reinforcement learning agent that observes the environmental quality metrics of each signal (frame sharpness, audio signal-to-noise ratio) and dynamically adjusts fusion weights accordingly would improve performance under diverse deployment conditions.
+
+\subsection{Federated Model Personalisation}
+
+Different examination populations have different baseline behavioural profiles: a candidate typing in a second language will have different keystroke dynamics than a native speaker; a candidate in a shared household will have different background audio patterns than one in a private room. A federated learning framework in which each institution can fine-tune the SentinelAI detection models on their own candidate population data --- without sharing raw telemetry with a central server --- would improve per-institution performance while preserving candidate privacy.
+
+\subsection{Adversarial Robustness Evaluation}
+
+The current evaluation protocol tests performance against naive, unaware candidates. A sophisticated candidate who is aware of the detection mechanisms could attempt to evade them: wearing a mask to trigger face-absence detection intentionally while actually consulting reference materials, using a virtual background to conceal a secondary device, or deliberately typing at a constant rate to avoid keystroke anomaly detection. A systematic adversarial robustness evaluation would enumerate potential evasion strategies and test the system's resilience against each.
+
+\subsection{Blockchain-Based Immutable Audit Trail}
+
+The current SHA-256-based audit receipts stored in PostgreSQL provide integrity guarantees only if the database itself is not compromised. For institutions requiring stronger tamper-evidence guarantees (e.g., for professional certification examinations subject to legal challenge), anchoring the receipt hashes to a public blockchain (such as Ethereum or a permissioned chain) would provide an independently verifiable and permanently accessible audit record.
+
+\subsection{Live Institutional Pilot}
+
+The most important direction for future work is a controlled live pilot deployment with a partnering educational institution. A pilot would provide:
+
+\begin{itemize}
+    \item Ecologically valid performance data from real examination sessions.
+    \item Measurement of proctor workload reduction relative to unassisted human monitoring.
+    \item Student and proctor experience data through structured surveys.
+    \item Identification of integration challenges with existing Learning Management Systems.
+    \item Data for IRB-approved fairness analysis across demographic groups.
+\end{itemize}
+
+Such a pilot would substantially strengthen the empirical foundation of the system and identify practical deployment concerns that cannot be anticipated from simulation-based evaluation alone.
+
+\subsection{Multi-Language Support}
+
+Extending SentinelAI's frontend interfaces, XAI rationale templates, and audio processing (VAD models trained on non-English speech) to support the major examination languages (Hindi, Mandarin, Spanish, Arabic, French, Portuguese, Russian, German, Japanese, and Korean) would be necessary for global deployment. The XAI rationale templates are particularly straightforward to localise, as they are simple string templates with variable substitution rather than generated text.
+
+\section{Closing Remarks}
+
+SentinelAI demonstrates that the core requirements for a fair, transparent, and technically effective online examination proctoring system can be met simultaneously within the resource constraints of a B.Tech Mini Project-II implementation. The six-agent multi-modal architecture achieves an F1-score of 0.910 with median alert latency of 720\,ms, provides structured natural-language explainability for every alert, and generates cryptographically verifiable audit records for institutional compliance.
+
+The results of the ablation study confirm that each detection modality contributes meaningfully to overall system performance, with no single agent sufficient on its own. The Clipboard Monitor, which detects potential AI-assisted cheating through large paste event analysis, provides the largest incremental F1 gain despite having the lowest weight in the fusion scheme --- a finding that has implications for how future systems should prioritise detection capabilities as AI-assisted cheating becomes more prevalent.
+
+The limitations acknowledged in this report --- particularly the simulation-based evaluation dataset, the gaze tracker's known ambiguity, and the absence of AI-generated text detection --- define a clear roadmap for future development. Addressing these limitations would bring SentinelAI substantially closer to a system suitable for live institutional deployment.

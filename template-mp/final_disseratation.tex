@@ -1,0 +1,200 @@
+
+%=====================================================================
+% Document Style
+%\documentclass{book}
+
+
+%=====================================================================
+% APS format: There is no prescribed format by IIT Bombay
+\documentclass{final_raitdisser}
+% To include optional packages, use the \usepackage command.
+% For e.g.:
+\usepackage{graphicx}
+\usepackage{epstopdf}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\numberwithin{equation}{chapter}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage[section]{placeins}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usepgfplotslibrary{groupplots}
+\usetikzlibrary{positioning, shapes.geometric, arrows.meta, fit, calc}
+% shared style for the native figures
+\definecolor{csblue}{HTML}{2C6FBB}
+\definecolor{csorange}{HTML}{D8722C}
+\definecolor{csred}{HTML}{C0392B}
+\definecolor{csgreen}{HTML}{2E8B57}
+\definecolor{csgray}{HTML}{8A8F98}
+\pgfplotsset{
+  csbase/.style={
+    width=\linewidth, height=6.2cm, tick align=outside, tick pos=left,
+    every axis plot/.append style={line width=0.9pt},
+    label style={font=\small}, tick label style={font=\footnotesize},
+    title style={font=\small\bfseries}, legend style={font=\footnotesize},
+    grid=major, grid style={line width=0.3pt, draw=gray!20},
+  },
+}
+%\usepackage{lipsum}
+\usepackage{fancyhdr}
+\usepackage[hidelinks]{hyperref}
+% % % % % % % % % % % % %
+
+% % % % % % % % % %
+%\usepackage{itulheadings}
+%\fancyhead{} % Clears all page headers and footers
+%\rhead{\thepage} % Sets the right side header to show the page number
+%\lhead{} % Clears the left side page header
+
+%\fancyfoot{}
+%\fancyhead[RO,LE]{\thepage}
+%\fancyhead[LO]{\leftmark}
+%\fancyhead[RE]{\rightmark}
+%=======================================================================
+% End of Preamble, start of document
+%
+
+
+\begin{document}
+
+% Choose your bibliography style
+%\pagestyle{fancy}
+\fancyhf{}
+%\fancyhead[LE,RO]{\thepage}
+\fancyhead[RE]{\thechapter}
+%\fancyhead[LO]{\rightmark}
+\fancyhf[FCE,FCO]{\thepage}
+%\fancyhf[HRE,HRE]{\textit{ \nouppercase{\rightmark}}}
+%\fancyhead[HRE,HRE]{\thechapter\chaptername}
+%\fancyhead[RO]{\thesection\sectionname}
+%\renewcommand{\sectionmark}[1]{\markright{\thesection\ #1}{}}
+%\lhead{Guides and tutorials}
+%\lhead{\fancyplain{}{\rightmark }}
+%\renewcommand{\chaptermark}[1] {  \markboth{#1}{} }
+%\renewcommand{\sectionmark}[1] { \markright{\thesection#1}{} }
+%\lhead[1]{\chaptermark}
+%\rhead[\sectionmark]{}
+
+
+%\pagestyle{itulheadings}
+
+%\chapter{Chapter}
+%\section{section}
+
+%\lipsum
+%\lipsum
+
+% plain is the basic style, others include ieeetr, siam, asm, etc
+\bibliographystyle{ieeetr}
+
+%\include{defs}                   % Common definitions used throughout the thesis
+\include{final_disser_prelude}
+              % Title page, abstract, table of contents, etc
+\include{introduction}            % Chapter 1: Introduction
+\include{literature_review}                   % Other chapters as required
+\include{experimental_design}
+\include{flowchart}            % System Workflow Flowchart
+\include{results}
+\include{chapter_6}
+%\include{chapter_conclusions}
+      % Finally the summary & conclusions
+%\include{appendix_1}
+\addcontentsline{toc}{chapter}{References}
+\bibliography{references.bib}
+%--------------------------------------------------------------------%
+
+% APPENDIX
+%  Appendices, if any, must precede the cited literatures.
+%  Appendices shall be numbered in Roman Capitals (e.g. Appendix IV)
+%\appendix
+%\include{appendix_1}
+%\include{appendix_2}
+%       % Appendices if any..
+
+%--------------------------------------------------------------------%
+% LITERATURE CITED
+%   This should follow the appendices, if any, otherwise summary and
+%   conclusions chapter.
+%\clearpage
+
+% % % % % % % % % % % % % % % % % % % % % % % % % %
+%\begin{bib}
+%% % % % % % % % % % % %
+%\bibitem{r1} D. N. Sonawane, M. S. Sutaone , B. N. Choudhari and Abhijeet Badurkar , ``FPGA Implementation of Simplified SVPWM Algorithm for Three Phase Voltage Source Inverter '', \emph{International Journal of Computer and Electrical Engineering}, Vol.2, No.6, December, pp. 1793-8163, 2010.
+%% % % % % % % % % % % % % % %
+%\end{bib}
+
+% % % % % % % % % % % % % % % % % % % % % % % % % % %
+
+% % % % % % % % % % % % % % % % % % %
+
+% % % % % % % % % % % % % % % % % % %
+% % % % % % % % % % % % %
+%\begin{vita}
+%	
+%	\begin{enumerate}
+%		\item Chaurasiya Rohit B., Mukesh Patil, Divya Shah and Abhijit Kadam. FPGA Implementation of SVPWM Control Technique for Three Phase Induction Motor Drive using Fixed Point Realization. \emph{IEEE Approved (\#32473) International Conference on Circuits, Systems, Communication and Information Technology Applications (CSCITA-2014).} April 4-5, 2014. \\
+%	\end{enumerate}
+%
+%
+%
+%\end{vita}
+
+% % % % % % % % % %
+\clearpage
+\addcontentsline{toc}{chapter}{Dissertation Approval for B.Tech}
+
+
+\clearpage
+\addcontentsline{toc}{chapter}{Acknowledgments}
+% % % % % % % % % % % % % % % % % % %
+%\begin{acknowledgments}
+%With great pleasure, I avail this opportunity to express my deep
+%sense of gratitude to my guide and Ph. D. Coordinator, [Guide Name] for his/her spirited guidance
+%and inspiration. I have deep sense of admiration for his/her innate
+%goodness and inexhaustible enthusiasm which helped me to work in right
+%direction to attain desired objective.
+%
+%I am also thankful to him/her for his/her
+%valuable time and helped me in all possible ways towards successful
+%completion of this work. I thank all those who have contributed
+%directly or indirectly to this work.
+%
+%I am thankful to our Principal Dr. M. D. Patil for his support and
+%encouragement. I extend thanks to my friends who have done lots of
+%nice things for me. I cannot end without thanking my lovely family
+%for their encouragement.
+
+%\vspace{0.55in}
+%\begin{tabular}{ccc}
+%
+%      \rule{5cm}{1sp}                && \hspace{1.3in} \rule{5cm}{1sp} \\ \vspace{0.65in}
+%       Date             && \hspace{1.3in} Signature
+%%      \rule{5cm}{1sp}                &&\hspace{1.3in} \rule{5cm}{1sp} \\
+%%      Head of Department                &&\hspace{1.3in} Principal \\\\
+%        %&\rule{5cm}{1sp}& \\
+%%       &Principal&
+%    \end{tabular}
+%
+%
+%%\begin{tabular}{ccc}
+%%
+%%      Date: \rule{5cm}{1sp} &\rule{5mm}{0pt} & \rule{10mm}{0pt}
+%%      \\\vspace{0.1in}
+%%                       &&   \\
+%%
+%%    \end{tabular}
+%
+%   \end{acknowledgments}
+
+
+
+%\bibliography{rohit}              % Make the bibliography
+
+%--------------------------------------------------------------------%
+
+
+
+
+\end{document}

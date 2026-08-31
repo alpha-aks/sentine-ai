@@ -1,0 +1,436 @@
+%\renewcommand{\baselinestretch}{1.5}\normalsize
+\chapter{System Design and Methodology}
+\thispagestyle{empty}
+
+This chapter provides a detailed description of every component of the SentinelAI system, the design rationale behind each architectural decision, the data pipeline through which telemetry flows from candidate devices to proctor dashboard, the AI agents and their detection logic, the evaluation dataset construction methodology, and the performance metrics and evaluation protocol used to assess the system.
+
+\section{System Architecture Overview}
+
+\subsection{Design Principles}
+
+The SentinelAI architecture was designed according to the following principles, derived from the requirements established in Chapter 1:
+
+\begin{enumerate}
+    \item \textbf{Separation of concerns}: Each detection modality is handled by an independent agent service with a well-defined API. This allows each agent to be developed, tested, and upgraded independently without modifying other components.
+    \item \textbf{Stateless agents, stateful orchestrator}: Individual detection agents are implemented as stateless request-response services. All session state (current risk score, event history, smoothed signal values) is maintained exclusively by the Decision Orchestrator. This simplifies horizontal scaling: multiple instances of any agent can be run in parallel without coordination.
+    \item \textbf{Shared type contracts}: All inter-service communication uses TypeScript interface types from the shared \texttt{@sentinel-ai/types} package. This eliminates a class of runtime errors caused by inconsistent data shapes between producer and consumer services.
+    \item \textbf{Turborepo build orchestration}: The monorepo uses Turborepo to cache build artifacts and parallelize build and test tasks across packages, reducing the development feedback loop.
+    \item \textbf{Environment-based configuration}: All agent weights, alert thresholds, and service URLs are specified through environment variables, enabling the system to be reconfigured for different institutional policies without code changes.
+\end{enumerate}
+
+\subsection{Monorepo Structure}
+
+The SentinelAI codebase is organised as a Turborepo monorepo with the following top-level structure:
+
+\begin{table}[h]
+    \centering
+    \caption{Top-level directory structure of the SentinelAI Turborepo monorepo.}
+    \begin{tabular}{@{}lll@{}}
+        \toprule
+        Directory & Type & Description \\
+        \midrule
+        \texttt{apps/student-portal}    & Frontend & Vite/React, port 3000 \\
+        \texttt{apps/proctor-dashboard} & Frontend & Vite/React, port 3001 \\
+        \texttt{apps/admin-portal}      & Frontend & Vite/React, port 3002 \\
+        \texttt{apps/web}               & Frontend & Next.js 14, port 3003 \\
+        \texttt{services/backend}       & Backend  & Express REST + WebSocket, port 4000 \\
+        \texttt{services/vision-guard-service} & Backend & TypeScript + Python sidecar, port 5000 \\
+        \texttt{services/question-service}     & Backend & Question bank CRUD API, port 4001 \\
+        \texttt{packages/types}         & Shared   & TypeScript interface definitions \\
+        \texttt{packages/ui}            & Shared   & Shared React component library \\
+        \texttt{packages/utils}         & Shared   & Shared utility functions \\
+        \texttt{packages/constants}     & Shared   & Shared configuration constants \\
+        \bottomrule
+    \end{tabular}
+    \label{tab:monorepo}
+\end{table}
+
+\subsection{High-Level Component Diagram}
+
+Figure~\ref{fig:arch} shows the high-level component diagram illustrating the data flows between all major system components.
+
+\begin{figure}[htbp]
+    \centering
+    \begin{tikzpicture}[
+        box/.style={draw, rounded corners=4pt, minimum width=3.0cm, minimum height=0.9cm,
+                    fill=csblue!15, font=\small, align=center},
+        agent/.style={draw, rounded corners=4pt, minimum width=2.8cm, minimum height=0.75cm,
+                      fill=csorange!20, font=\small\itshape, align=center},
+        db/.style={draw, rounded corners=4pt, minimum width=4.5cm, minimum height=0.75cm,
+                   fill=csgray!25, font=\small, align=center},
+        arr/.style={->, thick, gray!70},
+        every node/.style={font=\small}
+    ]
+    % Row 1: Frontends
+    \node[box] (student)  at (0,5.5)   {Student Portal\\(3000)};
+    \node[box] (proctor)  at (3.8,5.5) {Proctor\\Dashboard (3001)};
+    \node[box] (admin)    at (7.6,5.5) {Admin Portal\\(3002)};
+    \node[box] (web)      at (11.4,5.5){Web App\\Next.js (3003)};
+
+    % Row 2: API Gateway
+    \node[box, fill=csgreen!20, minimum width=11.5cm, text width=11cm] (api) at (5.7,3.8)
+        {Backend API Gateway --- REST + WebSocket (port 4000)};
+
+    % Row 3: Agents
+    \node[agent] (vg)     at (0,2.0)   {Vision Guard\\(YOLOv11)};
+    \node[agent] (gz)     at (2.5,2.0) {Gaze\\Tracker};
+    \node[agent] (vad)    at (5.0,2.0) {Acoustic\\VAD};
+    \node[agent] (bb)     at (7.5,2.0) {Behavioral\\Biometrics};
+    \node[agent] (cl)     at (10.0,2.0){Clipboard\\Monitor};
+    \node[agent] (orch)   at (5.7,0.5) {Decision Orchestrator};
+
+    % Row 4: Database
+    \node[db] (db) at (5.7,-0.9) {PostgreSQL (Neon) --- Sessions, Alerts, Audit Ledger};
+
+    % Arrows: frontends to API
+    \foreach \f in {student,proctor,admin,web}
+        \draw[arr] (\f) -- (api);
+
+    % Arrows: API to agents
+    \foreach \a in {vg,gz,vad,bb,cl}
+        \draw[arr] (api) -- (\a);
+
+    % Arrows: agents to orchestrator
+    \foreach \a in {vg,gz,vad,bb,cl}
+        \draw[arr] (\a) -- (orch);
+
+    % Orchestrator back to API
+    \draw[arr] (orch) -- ++(0,-0.5) -| (api);
+
+    % API to DB
+    \draw[arr] (api) -- (db);
+    \end{tikzpicture}
+    \caption{High-level component diagram of the SentinelAI system. Candidate telemetry flows from the Student Portal through the API gateway to specialised AI agents. Agent outputs are fused by the Decision Orchestrator, which feeds risk scores and alerts back to the gateway for distribution to the Proctor Dashboard. All decisions are persisted to the PostgreSQL audit database.}
+    \label{fig:arch}
+\end{figure}
+
+\section{Data Pipeline}
+
+\subsection{Telemetry Sources and Acquisition}
+
+SentinelAI collects four categories of telemetry from each active examination session:
+
+\textbf{(1) Webcam video frames.} The student portal requests camera access through the browser's \texttt{getUserMedia} WebRTC API. Video is captured at 15 frames per second (FPS) at a resolution of 640$\times$480 pixels. Each frame is encoded as a JPEG image at 80\% quality compression (to reduce bandwidth) and transmitted over a dedicated WebSocket connection to the Vision Guard service. The use of WebSocket rather than HTTP polling reduces round-trip latency and eliminates the overhead of HTTP header parsing for high-frequency requests.
+
+\textbf{(2) Microphone audio.} The \texttt{getUserMedia} API also provides access to the device microphone. Audio is captured as a continuous PCM stream at 16\,kHz sample rate and 16-bit depth (the parameters required by the WebRTC VAD algorithm). The browser's Web Audio API is used to segment the stream into 160\,ms frames (2,560 samples at 16\,kHz), which are then serialised as binary ArrayBuffer objects and transmitted over a WebSocket connection to the backend acoustic monitoring agent.
+
+\textbf{(3) Browser telemetry.} A lightweight JavaScript event listener module injected into the student portal captures: (a) \texttt{visibilitychange} events with the new visibility state, (b) \texttt{blur} and \texttt{focus} events on the window object, (c) \texttt{paste} events on examination text areas with the pasted text length in bytes (not the pasted content, to avoid storing candidate data), and (d) \texttt{beforeunload} events indicating potential page navigation attempts. These events are batched and sent to the backend REST API as JSON POST requests with timestamps accurate to the millisecond.
+
+\textbf{(4) Keystroke dynamics.} The student portal captures \texttt{keydown} and \texttt{keyup} events on examination input fields, recording the key code (not the character value, to protect exam content confidentiality) and the timestamp of each event with millisecond precision. Dwell times (keydown to keyup) and flight times (keyup to next keydown) are computed client-side and sent to the backend as aggregated statistics every 30 seconds.
+
+\subsection{Frame Buffer Design}
+
+The Vision Guard service must process incoming video frames at the rate they arrive (15 FPS, one frame every 67\,ms) while running YOLOv11 inference which may take 50--120\,ms depending on hardware. To handle this mismatch without introducing backpressure that would stall the WebSocket receiver, a lock-free circular frame buffer is implemented in \texttt{frame-buffer.ts}.
+
+The buffer maintains a fixed-capacity array of frame slots (capacity: 30 frames, representing 2 seconds of video at 15\,FPS). A write pointer (updated by the WebSocket receiver) and a read pointer (updated by the inference worker) track the current write and read positions. When the buffer is full, new incoming frames overwrite the oldest unprocessed frames. This ``overwrite-on-full'' policy ensures that the inference worker always processes the most recent available frame, at the cost of potentially skipping frames during inference load spikes.
+
+The frame queue module (\texttt{frame-queue.ts}) provides a higher-level abstraction over the frame buffer, exposing an asynchronous iterator interface that the inference loop uses to consume frames one at a time.
+
+\subsection{Inter-Service Communication}
+
+The backend API gateway communicates with the Vision Guard service through a dedicated internal WebSocket connection. For the remaining agents (Gaze Tracker, Acoustic VAD, Behavioral Biometrics, Clipboard Monitor), which have lower data volumes and less strict latency requirements, communication is through internal REST HTTP calls.
+
+The Decision Orchestrator runs as a module within the backend API gateway process, maintaining an in-memory map of active session states. This design avoids the network round-trip overhead of a separate orchestrator service and simplifies state management. The tradeoff is that the orchestrator's state is not replicated; a backend process restart would clear all in-memory session states. For a production deployment, the session state map would be replaced with a Redis cache to provide persistence and enable horizontal scaling.
+
+\subsection{WebSocket Alert Distribution}
+
+When the Decision Orchestrator updates a session's risk score or generates an alert, it publishes the update to all WebSocket clients subscribed to that session. The Proctor Dashboard maintains a persistent WebSocket connection to the backend and receives updates as JSON messages of the following types:
+
+\begin{itemize}
+    \item \texttt{DECISION\_UPDATE}: Contains the updated session risk score and alert level.
+    \item \texttt{ALERT\_TRIGGERED}: Contains the full alert object including the XAI explainability text.
+    \item \texttt{PROCTOR\_ACTION\_EXECUTED}: Confirms that a proctor intervention action has been logged.
+    \item \texttt{SESSION\_STATUS\_CHANGED}: Indicates that a session has changed state (e.g., from \texttt{IN\_PROGRESS} to \texttt{COMPLETED}).
+\end{itemize}
+
+\section{AI Agent Designs}
+
+\subsection{Vision Guard Agent}
+
+The Vision Guard agent is implemented as a standalone TypeScript microservice (\texttt{services/vision-guard-service}) that spawns a Python subprocess running the YOLOv11 inference engine. This two-process architecture allows the TypeScript layer to handle WebSocket communication, frame buffering, and rule evaluation using familiar Node.js patterns, while the Python sidecar provides access to the Ultralytics YOLOv11 SDK which does not have a native TypeScript binding.
+
+Inter-process communication between the TypeScript parent and Python child processes uses standard I/O pipes: the parent sends base64-encoded JPEG frames as newline-delimited JSON messages on the child's stdin, and the child returns detection results as newline-delimited JSON on stdout. This protocol is simple, debuggable, and does not require any additional IPC framework.
+
+The YOLOv11 detector is configured to detect the COCO80 categories most relevant to the proctoring use case: \textit{person} (class ID 0), \textit{cell phone} (class ID 67), \textit{book} (class ID 73), \textit{laptop} (class ID 63), and \textit{keyboard} (class ID 66). Detections with confidence below 0.45 are discarded to reduce false positives. The Python sidecar returns the bounding boxes, class labels, and confidence scores for all surviving detections.
+
+The TypeScript rule engine then evaluates the following rules against each frame's detection results, as summarised in Table~\ref{tab:rules}:
+
+\begin{table}[h]
+    \centering
+    \caption{Vision Guard detection rules, trigger conditions, and assigned severity levels.}
+    \begin{tabular}{@{}llll@{}}
+        \toprule
+        Rule Name & Trigger Condition & Duration & Severity \\
+        \midrule
+        Face Absent        & No \textit{person} bbox detected           & $>$2\,s consecutive   & HIGH     \\
+        Multiple Faces     & $\geq$2 \textit{person} bboxes in frame    & Single frame          & CRITICAL \\
+        Phone Visible      & \textit{cell phone} conf. $>$0.6           & $>$1\,s consecutive   & HIGH     \\
+        Book / Notes       & \textit{book} conf. $>$0.55                & $>$3\,s consecutive   & MEDIUM   \\
+        Laptop Visible     & \textit{laptop} conf. $>$0.6               & $>$2\,s consecutive   & MEDIUM   \\
+        Looking Away       & Gaze deviation $>$25\textdegree            & $>$3\,s consecutive   & MEDIUM   \\
+        Camera Tamper      & Mean luminance $<$10 or $>$245             & $>$0.5\,s consecutive & CRITICAL \\
+        Low Frame Quality  & Laplacian energy $<$50                     & $>$2\,s consecutive   & LOW      \\
+        \bottomrule
+    \end{tabular}
+    \label{tab:rules}
+\end{table}
+
+Duration-based rules require the triggering condition to be continuously satisfied for the specified duration before a \texttt{ViolationEvent} is emitted. This prevents transient detection noise (caused by frame compression artifacts, brief lighting changes, or momentary object occlusions) from generating spurious alerts.
+
+\subsection{Gaze Tracking Agent}
+
+The Gaze Tracking agent is implemented within the Vision Guard service as a secondary analysis pass applied to frames that pass a face presence check. MediaPipe Face Mesh is invoked through a Python subprocess (separate from the YOLOv11 sidecar) to extract 478 facial landmarks from each frame.
+
+Gaze direction is estimated from the positions of the iris landmarks (IDs 468--477). The horizontal gaze displacement is computed as:
+
+\begin{equation}
+    \Delta_h = \frac{x_{\text{iris}} - x_{\text{eye\_centre}}}{x_{\text{outer\_canthus}} - x_{\text{inner\_canthus}}}
+    \label{eq:gaze_h}
+\end{equation}
+
+where $x_{\text{iris}}$ is the horizontal coordinate of the iris centre, $x_{\text{eye\_centre}}$ is the midpoint of the eye corner coordinates, and the denominator normalises by eye width to account for variation in face size and camera distance. An analogous formula gives $\Delta_v$ for vertical gaze displacement.
+
+The gaze deviation angle is approximated as:
+
+\begin{equation}
+    \theta = \arctan\left(\sqrt{\Delta_h^2 + \Delta_v^2}\right) \cdot \frac{180}{\pi}
+    \label{eq:gaze_angle}
+\end{equation}
+
+This is a first-order approximation that does not account for head pose; a full gaze estimation pipeline would decouple gaze direction from head orientation. For the purposes of the proctoring application, where the primary interest is in large, sustained deviations rather than precise gaze points, this approximation was considered adequate.
+
+\subsection{Acoustic VAD Agent}
+
+The Acoustic VAD agent processes 160\,ms audio windows received from the backend and returns a per-window speech probability score. The implementation uses a simplified energy-based VAD:
+
+\begin{equation}
+    E_t = 20 \log_{10}\left(\text{RMS}(x_t)\right)
+    \label{eq:energy}
+\end{equation}
+
+where $x_t$ is the vector of PCM samples in window $t$. The VAD probability is computed as a sigmoid function of the energy relative to a dynamically estimated noise floor:
+
+\begin{equation}
+    p_t = \sigma\left(\frac{E_t - E_{\text{noise}}}{\tau}\right)
+    \label{eq:vad_prob}
+\end{equation}
+
+where $E_{\text{noise}}$ is the mean energy of the 20 most recent windows classified as non-speech (updated using a leaky integrator), $\tau = 6\,\text{dB}$ is a temperature parameter controlling the sharpness of the sigmoid transition, and $\sigma(\cdot)$ is the logistic function. The running 10-second mean of $p_t$ is maintained as the smoothed VAD signal $\bar{p}$. A sustained $\bar{p} > 0.6$ for more than 8 seconds generates a MEDIUM-severity ViolationEvent.
+
+\subsection{Behavioral Biometrics Agent}
+
+The Behavioral Biometrics agent analyses the structured event data sent from the student portal: paste events, tab-switch events, and keystroke statistics.
+
+\textbf{Clipboard paste anomaly detection.} For each paste event, the agent computes the z-score of the pasted byte length relative to the session's historical paste distribution:
+
+\begin{equation}
+    z_{\text{paste}} = \frac{L_{\text{paste}} - \mu_{\text{paste}}}{\sigma_{\text{paste}}}
+    \label{eq:paste_zscore}
+\end{equation}
+
+where $L_{\text{paste}}$ is the byte length of the current paste, and $\mu_{\text{paste}}$, $\sigma_{\text{paste}}$ are the running mean and standard deviation of all paste byte lengths in the session (with a minimum $\sigma_{\text{paste}} = 50$ bytes to prevent division by near-zero values in sessions with few paste events). A z-score above 3.0 generates a HIGH-severity ViolationEvent; a z-score between 2.0 and 3.0 generates a MEDIUM-severity event.
+
+\textbf{Tab-switch frequency monitoring.} The number of \texttt{visibilitychange} events per minute is computed as a sliding window count over the past 5 minutes. More than 3 focus-loss events per minute generates a LOW-severity event; more than 8 per minute generates a MEDIUM-severity event.
+
+\textbf{Typing burst detection.} The typing burst coefficient $B_t$ is defined as the ratio of the maximum to the mean keystroke rate over 5-minute non-overlapping windows:
+
+\begin{equation}
+    B_t = \frac{\max_{s \in W_t} \text{KPM}(s)}{\text{mean}_{s \in W_t} \text{KPM}(s)}
+    \label{eq:burst}
+\end{equation}
+
+where $\text{KPM}(s)$ is the keystroke rate in 30-second sub-window $s$ and $W_t$ is the set of sub-windows in the current 5-minute window. A burst coefficient above 3.0 (indicating a sudden surge in typing speed, consistent with a copy-paste operation that was not captured by the paste event listener) generates a LOW-severity event.
+
+\subsection{Decision Orchestrator}
+
+The Decision Orchestrator is the central coordination component of SentinelAI. It maintains, for each active session, the following state:
+
+\begin{itemize}
+    \item A per-agent smoothed signal value $\hat{s}_i$, updated via EMA (Equation \ref{eq:ema}) whenever a ViolationEvent is received from agent $i$.
+    \item A composite risk score $r$, computed as the weighted sum of agent signals.
+    \item An alert level, derived from the composite risk score via the threshold function (Equation \ref{eq:tiers}).
+    \item A list of recent ViolationEvents, used for XAI rationale assembly.
+    \item A complete alert history for the session.
+\end{itemize}
+
+The composite risk score is computed as:
+
+\begin{equation}
+    r = \sum_{i=1}^{6} w_i \cdot \hat{s}_i
+    \label{eq:risk}
+\end{equation}
+
+where the agent weights $w_i$ are configurable through environment variables, with default values as shown in Table~\ref{tab:weights}:
+
+\begin{table}[h]
+    \centering
+    \caption{Default agent weights in the Decision Orchestrator fusion scheme. Weights sum to 1.0.}
+    \begin{tabular}{@{}lcc@{}}
+        \toprule
+        Agent & Weight $w_i$ & Rationale \\
+        \midrule
+        Vision Guard (Face/Object)   & 0.35 & Highest reliability; direct visual evidence \\
+        Gaze Tracker                 & 0.10 & High ambiguity; supplementary signal only \\
+        Acoustic VAD                 & 0.20 & Reliable in quiet environments \\
+        Behavioral Biometrics        & 0.15 & Moderate reliability; complements vision \\
+        Clipboard Monitor            & 0.15 & High specificity for AI-assisted cheating \\
+        Device Detection             & 0.05 & Partially overlaps with Vision Guard \\
+        \midrule
+        \textbf{Total}              & \textbf{1.00} & \\
+        \bottomrule
+    \end{tabular}
+    \label{tab:weights}
+\end{table}
+
+The severity signals $\hat{s}_i$ are normalised to the range $[0,1]$: LOW severity maps to 0.25, MEDIUM to 0.50, HIGH to 0.75, CRITICAL to 1.00, and no active violation to 0.0.
+
+The alert level thresholds are:
+
+\begin{equation}
+    \text{AlertLevel}(r) =
+    \begin{cases}
+        \text{CRITICAL} & r \geq 0.85 \\
+        \text{HIGH}     & 0.70 \leq r < 0.85 \\
+        \text{MEDIUM}   & 0.40 \leq r < 0.70 \\
+        \text{LOW}      & r < 0.40
+    \end{cases}
+    \label{eq:tiers}
+\end{equation}
+
+A new alert is generated and stored to the database whenever the alert level increases (transitions from MEDIUM to HIGH, for example). Alert level decreases do not generate new alert records but are reflected in the live WebSocket updates sent to the Proctor Dashboard.
+
+\subsection{XAI Rationale Assembly}
+
+The XAI rationale assembly process runs each time the orchestrator computes a new risk score. It proceeds as follows:
+
+\begin{enumerate}
+    \item Collect the most recent ViolationEvent from each agent, together with its contribution weight $w_i \cdot \hat{s}_i$ to the composite score.
+    \item Sort the events by contribution weight in descending order.
+    \item Select the top-$k$ events (default $k=3$).
+    \item Instantiate a natural-language sentence template for each selected event, substituting specific sensor values (e.g., face count, gaze angle, paste byte length, audio probability).
+    \item Concatenate the resulting sentences, prepended with a summary line, to form the final \texttt{explainabilityText} string.
+\end{enumerate}
+
+Example output for a CRITICAL alert:
+
+\begin{quote}
+    \textit{``Flagged due to: 2 faces detected in frame at 14:32:17 (Vision Guard, weight 0.35); Clipboard paste of 1,842 bytes detected, z-score 4.2 (Clipboard Monitor, weight 0.15); Sustained audio VAD probability 0.74 for 12.3\,s (Acoustic VAD, weight 0.20). Primary risk driver: Multiple Faces Detected.''}
+\end{quote}
+
+\section{Frontend Application Designs}
+
+\subsection{Student Portal (apps/student-portal)}
+
+The Student Portal is a Vite/React single-page application that provides the candidate-facing examination interface. It is implemented in TypeScript and communicates with the backend API over HTTPS REST. The portal has three primary views:
+
+\begin{itemize}
+    \item \textbf{Exam Loading}: Displays a preparation screen while the session is initialised, the camera and microphone permissions are requested, and the pre-examination identity verification step (if configured) is completed.
+    \item \textbf{Question Answering}: Presents examination questions one at a time or in a scrollable list, depending on the examination configuration. Supports four question types: Multiple Choice (single answer), Multiple Select (multiple answers), Short Answer (text input), and Essay (rich text area). Answers are auto-saved every 30 seconds to the backend and also persisted to localStorage as a draft recovery mechanism.
+    \item \textbf{Submission Review}: Shows a summary of all answered and unanswered questions before final submission. Requires explicit confirmation from the candidate before the submission is finalised and the session is locked.
+\end{itemize}
+
+The portal initialises the webcam stream and microphone capture on the exam loading screen and maintains these streams throughout the session. The camera feed is displayed as a small picture-in-picture overlay in the corner of the question answering view, allowing candidates to verify that their camera is active and correctly positioned.
+
+\subsection{Proctor Command Centre (apps/proctor-dashboard)}
+
+The Proctor Command Centre is a Vite/React application providing real-time monitoring capabilities for human proctors. Its interface is divided into three panels:
+
+\textbf{Candidate grid}: A responsive grid of cards, one per active session, displaying the candidate's name, current risk score (as both a percentage and a colour-coded bar), camera thumbnail, and session status. Cards are automatically sorted by risk score in descending order, ensuring that the highest-risk candidates are always at the top of the grid.
+
+\textbf{Alert feed}: A right-side panel listing all active and recent alerts in chronological order, most recent first. Each alert card shows the candidate name, alert level badge, XAI explainability text, and time since the alert was triggered.
+
+\textbf{Evidence review modal}: A modal dialog that opens when a proctor clicks on a candidate card or alert card. It displays the full XAI rationale, a simulated 10-second pre-flag video clip player, and a control bar with action buttons: Dismiss (false positive), Warn (send in-session warning to candidate), and Terminate (end the session immediately). All proctor actions are transmitted to the backend REST API and logged to the audit database.
+
+The Proctor Command Centre maintains a persistent WebSocket connection to the backend, receiving real-time \texttt{DECISION\_UPDATE} and \texttt{ALERT\_TRIGGERED} messages. On receiving a CRITICAL alert, the interface plays an audible alert tone and briefly highlights the affected candidate card in red.
+
+\subsection{Admin Portal (apps/admin-portal)}
+
+The Admin Portal provides institution-level management capabilities including examination creation and configuration, candidate roster management, proctor assignment, and post-exam reporting. It communicates with the backend REST API using the administrator authentication context.
+
+\subsection{Web Application (apps/web)}
+
+The Web Application is a Next.js 14 application that serves as the primary management dashboard for the SentinelAI deployment. It uses the Clerk authentication provider for multi-tenant role-based access control. The dashboard includes routes for: institution management, user management, course and exam configuration, the audit/compliance reports page, and system health monitoring.
+
+\section{Database Schema}
+
+SentinelAI uses a PostgreSQL database (hosted on Neon's serverless platform for development) with the following primary tables:
+
+\begin{table}[h]
+    \centering
+    \caption{Primary database tables and their key fields.}
+    \begin{tabular}{@{}lll@{}}
+        \toprule
+        Table & Primary Fields & Purpose \\
+        \midrule
+        \texttt{institutions}  & id, name, settings & Institution registry \\
+        \texttt{users}         & id, role, institution\_id & User accounts \\
+        \texttt{exams}         & id, title, duration, questions & Exam definitions \\
+        \texttt{exam\_sessions} & id, exam\_id, candidate\_id, status & Active sessions \\
+        \texttt{risk\_scores}  & session\_id, score, timestamp & Risk score history \\
+        \texttt{alerts}        & id, session\_id, level, xai\_text & Alert records \\
+        \texttt{proctor\_actions} & id, alert\_id, action, timestamp & Proctor audit log \\
+        \texttt{submissions}   & id, session\_id, answers\_hash & Submission receipts \\
+        \bottomrule
+    \end{tabular}
+    \label{tab:schema}
+\end{table}
+
+The \texttt{submissions} table stores the SHA-256 hash of the serialised answer payload rather than the answers themselves; this design ensures that the audit record can verify answer integrity without duplicating the primary answer storage.
+
+\section{Evaluation Dataset Construction}
+
+\subsection{Simulation Methodology}
+
+In the absence of a real exam session dataset (which would require IRB approval and institutional collaboration beyond the scope of a Mini Project-II), the evaluation dataset was constructed from simulated sessions. The simulation proceeded as follows:
+
+\begin{enumerate}
+    \item \textbf{Clean sessions}: 120 sessions were constructed from webcam recordings of individuals performing genuine study tasks (reading, typing, thinking) without any cheating behaviour. These sessions served as true negatives.
+    \item \textbf{Violation sessions}: 80 sessions were constructed by scripting specific violation behaviours into the recording protocol. Each violation type was enacted by at least 10 different individuals in different home environments to capture diversity in lighting, camera quality, and background.
+\end{enumerate}
+
+The violation behaviours scripted were: face absence (leaving the camera view), multiple faces (a second person entering the frame), phone visibility (holding a smartphone in view), reading from printed notes, clipboard paste (large text pasted from an external document), tab switching, and simulated speech (reading aloud from a script).
+
+\subsection{Annotation Protocol}
+
+Each session was annotated by two independent reviewers using a structured annotation tool that displayed the webcam recording, audio waveform, and browser event log in a synchronised timeline view. Reviewers labelled each 30-second window of each session as either ``Violation'' or ``No Violation''. Inter-annotator agreement was computed using Cohen's $\kappa$:
+
+\begin{equation}
+    \kappa = \frac{p_o - p_e}{1 - p_e}
+    \label{eq:kappa}
+\end{equation}
+
+where $p_o$ is the observed agreement proportion and $p_e$ is the expected agreement under chance. The overall $\kappa$ across all session types was 0.81, indicating strong agreement (by the Landis and Koch \cite{landiskoch1977} scale). Disagreements were resolved by a third reviewer acting as adjudicator.
+
+\subsection{Train/Test Split}
+
+Sessions were divided 80/20 into a development set (160 sessions) and a held-out evaluation set (40 sessions). The split was performed at the session level to prevent data leakage: all 30-second windows from a given session appeared entirely in either the development or evaluation set, never split across both.
+
+\section{Evaluation Metrics}
+
+The following metrics are used to evaluate detection performance at the 30-second window level:
+
+\begin{align}
+    \text{Precision} &= \frac{\text{TP}}{\text{TP} + \text{FP}} \label{eq:precision} \\
+    \text{Recall} &= \frac{\text{TP}}{\text{TP} + \text{FN}} \label{eq:recall} \\
+    F_1 &= \frac{2 \cdot \text{Precision} \cdot \text{Recall}}{\text{Precision} + \text{Recall}} \label{eq:f1}
+\end{align}
+
+where TP, FP, and FN are true positives, false positives, and false negatives respectively at the 30-second window granularity.
+
+Alert latency is defined as the elapsed time from the frame or event timestamp that first satisfies a rule's trigger condition to the WebSocket message delivery timestamp at the Proctor Dashboard client. It is measured in milliseconds using \texttt{performance.now()} timestamps propagated through all inter-service messages.
+
+\section{Threshold Optimisation}
+
+The agent-level duration thresholds (Table~\ref{tab:rules}) and the orchestrator fusion weights (Table~\ref{tab:weights}) were tuned on the development set using a grid search. The search space included:
+
+\begin{itemize}
+    \item Face absence duration: $\{1, 2, 3, 4\}$ seconds
+    \item Looking-away duration: $\{2, 3, 5\}$ seconds
+    \item VAD threshold: $\{0.5, 0.6, 0.7\}$
+    \item VAD duration: $\{5, 8, 12\}$ seconds
+    \item Paste z-score threshold: $\{2.0, 2.5, 3.0\}$
+    \item Vision Guard weight: $\{0.30, 0.35, 0.40\}$
+    \item Acoustic weight: $\{0.15, 0.20, 0.25\}$
+\end{itemize}
+
+The full grid contained 972 candidate configurations. Each was evaluated on the development set, and the configuration maximising the development set $F_1$ score subject to the constraint that median alert latency $\leq 1000$\,ms was selected. This configuration was then evaluated exactly once on the held-out test set to produce the reported metrics.
