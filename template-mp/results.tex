@@ -314,9 +314,10 @@ The dominant latency component is database persistence (95\,ms median), which re
 
 Understanding the conditions under which the system generates false positive alerts is critical for assessing its suitability for real-world deployment. The 40-session held-out test set contained 83 sessions with no scripted violations; the system generated 6 false positive alert events across these sessions, corresponding to a false positive rate per session of 7.2\%.
 
-\begin{table}[h]
+\begin{table}[htbp]
     \centering
     \caption{False positive alert events on clean sessions in the held-out test set, categorised by triggering agent and environmental cause.}
+    \resizebox{\textwidth}{!}{%
     \begin{tabular}{@{}llll@{}}
         \toprule
         Agent & Count & Environmental Cause & Corrective Measure \\
@@ -325,7 +326,8 @@ Understanding the conditions under which the system generates false positive ale
         Acoustic VAD     & 2 & Radio audible in background             & Increase noise floor adaptation rate \\
         Vision Guard     & 1 & Strong backlighting obscuring face      & Add adaptive brightness normalisation \\
         \bottomrule
-    \end{tabular}
+    \end{tabular}%
+    }
     \label{tab:fp}
 \end{table}
 
@@ -335,9 +337,10 @@ The largest single source of false positives is the Gaze Tracker, confirming the
 
 Table~\ref{tab:verdicts} summarises the proctor-recorded final verdicts for all sessions in the evaluation dataset, combining automated risk scores with simulated proctor review decisions.
 
-\begin{table}[h]
+\begin{table}[htbp]
     \centering
     \caption{Post-examination proctoring verdict distribution across all 160 evaluation sessions.}
+    \resizebox{\textwidth}{!}{%
     \begin{tabular}{@{}lccc@{}}
         \toprule
         Verdict               & Sessions & Percentage (\%) & Action Taken \\
@@ -349,7 +352,8 @@ Table~\ref{tab:verdicts} summarises the proctor-recorded final verdicts for all 
         \midrule
         \textbf{Total}        & \textbf{160} & \textbf{100.0} & \\
         \bottomrule
-    \end{tabular}
+    \end{tabular}%
+    }
     \label{tab:verdicts}
 \end{table}
 
@@ -371,9 +375,10 @@ All 160 receipts passed all three verification checks, confirming that the audit
 
 Table~\ref{tab:per_violation} presents agent-level precision and recall broken down by individual violation type, computed on the subset of evaluation sessions in which each violation type was scripted.
 
-\begin{table}[h]
+\begin{table}[htbp]
     \centering
     \caption{Per-violation detection performance by responsible agent. ``Sessions'' indicates the number of evaluation sessions in which the violation was scripted.}
+    \resizebox{\textwidth}{!}{%
     \begin{tabular}{@{}lllcc@{}}
         \toprule
         Violation Type         & Agent               & Sessions & Precision (\%) & Recall (\%) \\
@@ -388,7 +393,8 @@ Table~\ref{tab:per_violation} presents agent-level precision and recall broken d
         Large Clipboard Paste  & Clipboard Monitor   & 18       & 96             & 93          \\
         Excessive Tab Switch   & Behavioral          & 12       & 83             & 79          \\
         \bottomrule
-    \end{tabular}
+    \end{tabular}%
+    }
     \label{tab:per_violation}
 \end{table}
 

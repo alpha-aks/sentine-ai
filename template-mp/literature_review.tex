@@ -60,7 +60,8 @@ Table~\ref{tab:lit_matrix} provides a structured comparative synthesis of promin
 \small
 \caption{Systematic comparison of automated proctoring systems and literature prototypes.}
 \label{tab:lit_matrix}
-\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lcccccc@{}}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lcccccc}
 \toprule
 \textbf{Framework / Study} & \textbf{Year} & \textbf{Modalities} & \textbf{Latency} & \textbf{XAI} & \textbf{Audit} & \textbf{Architecture} \\
 \midrule
@@ -72,7 +73,8 @@ Commercial Tools \cite{coghlan2021} & 2021 & Proprietary & Variable & No & No & 
 \midrule
 \textbf{SentinelAI (Ours)} & \textbf{2026} & \textbf{6-Modality Fused} & \textbf{720\,ms} & \textbf{Yes} & \textbf{Yes} & \textbf{Turborepo Microservices} \\
 \bottomrule
-\end{tabular*}
+\end{tabular}%
+}
 \end{table}
 
 \section{Identified Research Gap}

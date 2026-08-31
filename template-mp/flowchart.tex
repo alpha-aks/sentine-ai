@@ -11,6 +11,7 @@ The following flowchart (Figure~\ref{fig:flowchart}) illustrates the end-to-end 
 
 \begin{figure}[htbp]
 \centering
+\resizebox{0.82\textwidth}{!}{%
 \begin{tikzpicture}[
   %--- node styles ---
   startstop/.style={
@@ -182,7 +183,8 @@ The following flowchart (Figure~\ref{fig:flowchart}) illustrates the end-to-end 
 
 \draw[arr] (audit) -- (stop);
 
-\end{tikzpicture}
+\end{tikzpicture}%
+}
 \caption{End-to-end system workflow flowchart for SentinelAI. The flowchart covers: session initialisation and permission checking, real-time multi-modal telemetry capture, parallel processing by five specialised AI agents, weighted fusion and EMA smoothing by the Decision Orchestrator, threshold-based alert tier assignment, proctor review of XAI evidence, proctor intervention actions, and final Sentinel Receipt generation for the cryptographic audit ledger.}
 \label{fig:flowchart}
 \end{figure}

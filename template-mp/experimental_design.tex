@@ -245,15 +245,16 @@ where $\text{KPM}(s)$ is the keystroke rate in 30-second sub-window $s$ and $W_t
 
 The Decision Orchestrator is the central coordination component of SentinelAI. It maintains, for each active session, the following state:
 
-\begin{itemize}
-    \item A per-agent smoothed signal value $\hat{s}_i$, updated via EMA (Equation \ref{eq:ema}) whenever a ViolationEvent is received from agent $i$.
-    \item A composite risk score $r$, computed as the weighted sum of agent signals.
-    \item An alert level, derived from the composite risk score via the threshold function (Equation \ref{eq:tiers}).
-    \item A list of recent ViolationEvents, used for XAI rationale assembly.
-    \item A complete alert history for the session.
-\end{itemize}
+The per-agent signal smoothing is governed by the Exponential Moving Average (EMA) update equation:
 
-The composite risk score is computed as:
+\begin{equation}
+    \hat{s}_i(t) = \alpha s_i(t) + (1 - \alpha)\hat{s}_i(t - 1)
+    \label{eq:ema}
+\end{equation}
+
+where $\alpha \in [0, 1]$ represents the smoothing factor (empirically calibrated to $\alpha = 0.3$), and $s_i(t)$ denotes the instantaneous severity score dispatched by agent $i$.
+
+The composite risk score $r$ is subsequently computed as:
 
 \begin{equation}
     r = \sum_{i=1}^{6} w_i \cdot \hat{s}_i

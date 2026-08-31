@@ -87,44 +87,39 @@ This is certify the Mini- Project-I/II entitled `` \textbf{SentinelAI: A Multi-A
 
 \vspace{0.65in}
 % Please add the following required packages to your document preamble:
-% \usepackage{multirow}
 \begin{table}[h]
-
-
-\begin{tabular}{llll}
- &  & \textbf{Examiners:}         &        \\\\\\
-                     & \hspace{1.2in} & \multicolumn{2}{l}{1:  \rule{5cm}{1sp}} \\ \\
-                     &  & \multicolumn{2}{l}{2: \rule{5cm}{1sp}}  \\\\\\
-                     &  & \textbf{Supervisor:}        &        \\\\\\
-                     &  & \multicolumn{2}{l}{1: \rule{5cm}{1sp}}  \\\\\\
-                     &  & \multicolumn{2}{l}{2: \rule{5cm}{1sp}}  \\\\\\
-                     &  & \textbf{Principal:}         &        \\\\\\
-                     &  & \rule{4.5cm}{1sp}              &        \\\\\\\\
-Date : \rule{5cm}{1sp}  &  &                             &        \\\\\\
-Place : \rule{5cm}{1sp} &  &                             &       
+\begin{tabular}{p{5cm}p{1cm}p{7cm}}
+ & & \textbf{Examiners:} \\
+ & & 1: \rule{5cm}{0.4pt} \\
+ & & 2: \rule{5cm}{0.4pt} \\[0.3cm]
+ & & \textbf{Supervisor:} \\
+ & & 1: \rule{5cm}{0.4pt} \\
+ & & 2: \rule{5cm}{0.4pt} \\[0.3cm]
+ & & \textbf{Principal:} \\
+ & & \rule{5cm}{0.4pt} \\[0.5cm]
+Date: \rule{4cm}{0.4pt} & & \\
+Place: \rule{4cm}{0.4pt} & & 
 \end{tabular}
 \end{table}
 
 \newpage
 
-\noindent{\textbf{\begin{Huge}Declaration\end{Huge}}}\\ \\ \\
-I declare that this written submission represents my ideas in my own word and where others ideas or words have been included, I have adequately cited and referenced the original source. I also declare that I have adhered to all principles of academic honesty and integrity and have not misrepresented or fabricated or falsified any idea/data/fact/source in my submission. I understand that any violation of above will be cause for disciplinary action by institute and can also evoke penal action from the source which have thus not been properly cited or from whom proper permission has not been taken when needed.
+\noindent{\textbf{\begin{Huge}Declaration\end{Huge}}}\\[0.3in]
+I declare that this written submission represents our ideas in our own words and where others' ideas or words have been included, we have adequately cited and referenced the original source. We also declare that we have adhered to all principles of academic honesty and integrity and have not misrepresented or fabricated or falsified any idea/data/fact/source in our submission. We understand that any violation of the above will be cause for disciplinary action by the institute and can also evoke penal action from the sources which have thus not been properly cited or from whom proper permission has not been taken when needed.
 
-\vspace{0.65in}
-% Please add the following required packages to your document preamble:
-% \usepackage{multirow}
-\begin{table}[h]
-\centering
+\vspace{0.4in}
 
-\begin{tabular}{llll}
-   &  & \rule{7cm}{1sp}                         &  \\\\
-                       &  &   \multicolumn{2}{l}{\rule{7cm}{1sp}}        \\\\
-                        &  &   \multicolumn{2}{l}{\rule{7cm}{1sp}}        \\\\
-                       &  & \multicolumn{2}{l}{\rule{7cm}{1sp}}        \\\\
-                       &  & \textbf{(Name of student and Roll No.)} &  \\\\
-Date : \rule{5cm}{1sp} &  &                                         & 
+\begin{flushright}
+\begin{tabular}{l}
+\rule{6cm}{0.4pt} \\
+\rule{6cm}{0.4pt} \\
+\rule{6cm}{0.4pt} \\
+\textbf{Tanisha Chauhan (23MT7027)} \\
+\textbf{Atharva Salunkhe (23MT7008)} \\
+\textbf{Sulaiman Khan (23MT7015)} \\[0.3cm]
+Date: \rule{4cm}{0.4pt}
 \end{tabular}
-\end{table}
+\end{flushright}
 
 \newpage
 
@@ -142,63 +137,46 @@ Date : \rule{5cm}{1sp} &  &                                         &
 
 \noindent We are thankful to our Principal Dr. M. D. Patil for his support and encouragement. We extend thanks to our friends who have done many nice things for us. We cannot end without thanking our families for their constant encouragement and support throughout this journey.
 
-
-
 % ABSTRACT
 \begin{abstract}
 Online examinations have become the primary mode of assessment in modern educational institutions, yet ensuring academic integrity in remote, unsupervised environments remains a critical and largely unsolved challenge. Traditional rule-based proctoring tools produce high false-positive rates, lack explainability, and are unable to adapt to nuanced multi-modal cheating behaviours in real time.
 
 This project presents \textbf{SentinelAI} --- a production-grade, multi-agent AI framework for real-time online examination proctoring. SentinelAI coordinates a pipeline of specialised AI agents including a \textit{Vision Guard} (YOLOv11-based face and object detection), a \textit{Gaze Tracker}, an \textit{Acoustic VAD} (Voice Activity Detector), a \textit{Behavioral Biometrics Analyst}, and a \textit{Decision Orchestrator} to produce a calibrated, explainable risk score for every active exam session.
 
-The system is deployed as a cloud-native TypeScript monorepo (Turborepo) exposing three role-specific frontends (Student Portal, Proctor Command Centre, Admin Dashboard) backed by a REST/WebSocket API gateway and a microservices architecture. Empirical evaluation on simulated exam sessions demonstrates a violation detection precision of 93\% and recall of 89\%, with a median end-to-end alert latency of less than 800\,ms. The cryptographic audit ledger provides tamper-proof, post-exam compliance records for institutional review.\\ \\
-\textbf{Keywords:} \\{}
+The system is deployed as a cloud-native TypeScript monorepo (Turborepo) exposing three role-specific frontends (Student Portal, Proctor Command Centre, Admin Dashboard) backed by a REST/WebSocket API gateway and a microservices architecture. Empirical evaluation on simulated exam sessions demonstrates a violation detection precision of 93\% and recall of 89\%, with a median end-to-end alert latency of less than 800\,ms. The cryptographic audit ledger provides tamper-proof, post-exam compliance records for institutional review.\\[0.2in]
+\textbf{Keywords:} \\
 AI Proctoring, Multi-Agent Systems, YOLOv11, Real-Time Risk Scoring, Explainable AI, Behavioral Biometrics, Online Examination Integrity, Microservices
 
 \end{abstract}
 
 %--------------------------------------------------------------------%
 % CONTENTS, TABLES, FIGURES
- %\listoftables
- %\listoffigures
- \tableofcontents
- \listoffigures
+\tableofcontents
+\listoffigures
 \listoftables
 
 %----------------------------------------------------
-% % % % % % % % % % % % % % % % % % %
- \cleardoublepage
+\cleardoublepage
 \thispagestyle{empty}
 
+\noindent{\textbf{\begin{Huge}Abbreviations\end{Huge}}}\\[0.3in]
 
-      \noindent{\textbf{\begin{Huge}Abbreviations\end{Huge}}}\\ \\ \\
-
-AI \hspace{1in} Artificial Intelligence\\
-
-API \hspace{1in} Application Programming Interface\\
-
-CV \hspace{1in} Computer Vision\\
-
-DNN \hspace{1in} Deep Neural Network\\
-
-FPS \hspace{1in} Frames Per Second\\
-
-HTTP \hspace{1in} Hypertext Transfer Protocol\\
-
-IoU \hspace{1in} Intersection over Union\\
-
-ML \hspace{1in} Machine Learning\\
-
-REST \hspace{1in} Representational State Transfer\\
-
-VAD \hspace{1in} Voice Activity Detection\\
-
-WebRTC \hspace{1in} Web Real-Time Communication\\
-
-WebSocket \hspace{1in} Web Socket Protocol\\
-
-XAI \hspace{1in} Explainable Artificial Intelligence\\
-
-YOLO \hspace{1in} You Only Look Once\\
+\begin{tabular}{p{2.5cm}p{10cm}}
+\textbf{AI} & Artificial Intelligence \\
+\textbf{API} & Application Programming Interface \\
+\textbf{CV} & Computer Vision \\
+\textbf{DNN} & Deep Neural Network \\
+\textbf{FPS} & Frames Per Second \\
+\textbf{HTTP} & Hypertext Transfer Protocol \\
+\textbf{IoU} & Intersection over Union \\
+\textbf{ML} & Machine Learning \\
+\textbf{REST} & Representational State Transfer \\
+\textbf{VAD} & Voice Activity Detection \\
+\textbf{WebRTC} & Web Real-Time Communication \\
+\textbf{WebSocket} & Web Socket Protocol \\
+\textbf{XAI} & Explainable Artificial Intelligence \\
+\textbf{YOLO} & You Only Look Once \\
+\end{tabular}
 
 
 
