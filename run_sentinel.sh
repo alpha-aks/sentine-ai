@@ -41,9 +41,10 @@ fi
 # Activate virtual environment
 source venv/bin/activate
 
-# Install required deep learning libraries
-echo -e "${BLUE}Installing Python package dependencies...${NC}"
+# Install lightweight CPU-only PyTorch and deep learning dependencies
+echo -e "${BLUE}Installing lightweight CPU-only PyTorch & dependencies...${NC}"
 pip install --upgrade pip
+pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
 pip install ultralytics opencv-python-headless mediapipe numpy
 
 # Download ONNX pre-trained weights if missing
