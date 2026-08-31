@@ -51,6 +51,7 @@ Figure~\ref{fig:arch} shows the high-level component diagram illustrating the da
 
 \begin{figure}[htbp]
     \centering
+    \resizebox{0.88\linewidth}{!}{%
     \begin{tikzpicture}[
         box/.style={draw, rounded corners=4pt, minimum width=3.0cm, minimum height=0.9cm,
                     fill=csblue!15, font=\small, align=center},
@@ -99,7 +100,8 @@ Figure~\ref{fig:arch} shows the high-level component diagram illustrating the da
 
     % API to DB
     \draw[arr] (api) -- (db);
-    \end{tikzpicture}
+    \end{tikzpicture}%
+    }
     \caption{High-level component diagram of the SentinelAI system. Candidate telemetry flows from the Student Portal through the API gateway to specialised AI agents. Agent outputs are fused by the Decision Orchestrator, which feeds risk scores and alerts back to the gateway for distribution to the Proctor Dashboard. All decisions are persisted to the PostgreSQL audit database.}
     \label{fig:arch}
 \end{figure}

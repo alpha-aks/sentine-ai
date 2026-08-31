@@ -42,28 +42,7 @@ Figure~\ref{fig:riskdist} shows the distribution of time-averaged composite risk
 
 \begin{figure}[htbp]
     \centering
-    \begin{tikzpicture}
-    \begin{axis}[
-        csbase,
-        height=6.5cm,
-        ybar, bar width=28pt,
-        xlabel={Risk Tier},
-        ylabel={Number of Sessions},
-        symbolic x coords={CLEAR, LOW, MEDIUM, HIGH, CRITICAL},
-        xtick=data,
-        nodes near coords,
-        nodes near coords align={vertical},
-        enlarge x limits=0.15,
-        ymin=0, ymax=110,
-        title={Session Risk Score Distribution --- Evaluation Dataset (160 Sessions)},
-    ]
-    \addplot[fill=csblue,    draw=csblue!80!black]       coordinates {(CLEAR,83)};
-    \addplot[fill=csgreen,   draw=csgreen!80!black]      coordinates {(LOW,42)};
-    \addplot[fill=csorange!60!yellow, draw=csorange!80!black] coordinates {(MEDIUM,18)};
-    \addplot[fill=csorange,  draw=csorange!80!black]     coordinates {(HIGH,11)};
-    \addplot[fill=csred,     draw=csred!80!black]        coordinates {(CRITICAL,6)};
-    \end{axis}
-    \end{tikzpicture}
+    \includegraphics[width=0.88\linewidth]{risk_distribution_chart.jpg}
     \caption{Distribution of sessions by time-averaged risk score tier across the 160-session evaluation dataset. 83 sessions (51.9\%) were classified CLEAR (risk score below 0.10 throughout the session). 6 sessions (3.75\%) were classified CRITICAL (mean risk score above 0.85), corresponding to the most severe violation scenarios in the evaluation set.}
     \label{fig:riskdist}
 \end{figure}
@@ -76,52 +55,7 @@ Figure~\ref{fig:timeline} shows the composite risk score trajectories for three 
 
 \begin{figure}[htbp]
     \centering
-    \begin{tikzpicture}
-    \begin{axis}[
-        csbase,
-        height=7.0cm,
-        xlabel={Elapsed Time (minutes)},
-        ylabel={Composite Risk Score $r$},
-        xmin=0, xmax=180,
-        ymin=0, ymax=1.05,
-        ytick={0,0.2,0.4,0.6,0.70,0.85,1.0},
-        yticklabels={0.0,0.2,0.4,0.6,0.70,0.85,1.0},
-        legend pos=north west,
-        legend style={font=\footnotesize},
-        title={Composite Risk Score Trajectories --- Representative Sessions},
-    ]
-    % CRITICAL threshold
-    \addplot[dashed, thick, csred,    domain=0:180, samples=2] {0.85};
-    \addlegendentry{CRITICAL threshold}
-    % HIGH threshold
-    \addplot[dashed, thick, csorange, domain=0:180, samples=2] {0.70};
-    \addlegendentry{HIGH threshold}
-    % MEDIUM threshold
-    \addplot[dotted, thick, csgray,   domain=0:180, samples=2] {0.40};
-    \addlegendentry{MEDIUM threshold}
-    % Session A - escalates to CRITICAL (multiple faces + phone)
-    \addplot[csred, thick, smooth] coordinates {
-        (0,0.08)(10,0.09)(20,0.10)(30,0.12)(40,0.18)(50,0.28)
-        (60,0.38)(70,0.52)(80,0.65)(90,0.76)(100,0.85)
-        (110,0.88)(120,0.88)(130,0.88)(140,0.88)(150,0.86)
-        (160,0.85)(170,0.86)(180,0.88)
-    };
-    \addlegendentry{Session A --- CRITICAL (multi-face + phone)}
-    % Session B - HIGH risk (clipboard + tab switch)
-    \addplot[csorange, thick, smooth] coordinates {
-        (0,0.05)(20,0.06)(40,0.08)(60,0.42)(70,0.56)
-        (80,0.68)(90,0.74)(100,0.74)(110,0.72)(120,0.70)
-        (130,0.65)(140,0.60)(150,0.58)(160,0.62)(170,0.70)(180,0.74)
-    };
-    \addlegendentry{Session B --- HIGH (clipboard + tab switch)}
-    % Session C - CLEAR (clean session)
-    \addplot[csgreen, thick, smooth] coordinates {
-        (0,0.04)(30,0.05)(60,0.04)(90,0.06)(120,0.05)
-        (150,0.04)(180,0.05)
-    };
-    \addlegendentry{Session C --- CLEAR (no violations)}
-    \end{axis}
-    \end{tikzpicture}
+    \includegraphics[width=0.88\linewidth]{risk_timeline_chart.jpg}
     \caption{Composite risk score trajectories over a 180-minute simulated examination for three representative sessions. Session A demonstrates gradual escalation to CRITICAL level driven by sustained multiple-face and phone-visible detections. Session B shows a HIGH-risk profile with an abrupt increase at 60 minutes (corresponding to a large clipboard paste event) and sustained elevated score driven by continued tab-switching. Session C remains consistently below the LOW threshold throughout the session.}
     \label{fig:timeline}
 \end{figure}
@@ -136,44 +70,7 @@ Figure~\ref{fig:violations} shows the frequency of detection for each violation 
 
 \begin{figure}[htbp]
     \centering
-    \begin{tikzpicture}
-    \begin{axis}[
-        csbase,
-        height=8.5cm,
-        xbar, bar width=12pt,
-        xlabel={Number of Detection Events},
-        ylabel={Violation Category},
-        symbolic y coords={
-            {Typing Burst Anomaly},
-            {Acoustic Voice (VAD)},
-            {Looking Away (Gaze)},
-            {Tab Switch / Focus Lost},
-            {Clipboard Paste Anomaly},
-            {Secondary Device (Laptop)},
-            {Phone / Smartphone},
-            {Multiple Faces},
-            {Camera Tampering}
-        },
-        ytick=data,
-        nodes near coords,
-        nodes near coords align={horizontal},
-        xmin=0, xmax=62,
-        enlarge y limits=0.08,
-        title={Violation Category Detection Frequencies --- All Flagged Sessions},
-    ]
-    \addplot[fill=csblue!70, draw=csblue!80!black] coordinates {
-        (7,{Typing Burst Anomaly})
-        (14,{Acoustic Voice (VAD)})
-        (19,{Looking Away (Gaze)})
-        (21,{Tab Switch / Focus Lost})
-        (24,{Clipboard Paste Anomaly})
-        (28,{Secondary Device (Laptop)})
-        (32,{Phone / Smartphone})
-        (38,{Multiple Faces})
-        (47,{Camera Tampering})
-    };
-    \end{axis}
-    \end{tikzpicture}
+    \includegraphics[width=0.88\linewidth]{violation_categories_chart.jpg}
     \caption{Frequency of detection events per violation category across all flagged sessions in the evaluation dataset. Camera Tampering generates the highest detection count because it is a large, unambiguous visual signal (sudden luminance change). Multiple Faces and Phone / Smartphone detections follow because these categories were scripted into a large proportion of the HIGH- and CRITICAL-tier sessions. Typing Burst Anomaly has the lowest detection count because the keystroke dynamics signal has the highest ambiguity and lowest weight in the fusion scheme.}
     \label{fig:violations}
 \end{figure}
@@ -184,9 +81,10 @@ The relative frequencies in Figure~\ref{fig:violations} reflect both the sensiti
 
 To quantify the individual contribution of each agent to the fused pipeline performance, an ablation study was conducted in which agents were added incrementally to the fusion and the development-set $F_1$ score was measured at each stage. Table~\ref{tab:ablation} presents the results.
 
-\begin{table}[h]
+\begin{table}[htbp]
     \centering
     \caption{Incremental agent addition ablation study. Each row adds one agent to the fusion pipeline. Performance is measured on the 160-session development set using 5-fold cross-validation.}
+    \resizebox{\textwidth}{!}{%
     \begin{tabular}{@{}llccc@{}}
         \toprule
         Configuration & Added Agent & Precision (\%) & Recall (\%) & F1-Score \\
@@ -199,7 +97,8 @@ To quantify the individual contribution of each agent to the fused pipeline perf
         + Device Detection          & Device Detection & 91.3  & 88.5  & 0.899 \\
         + Clipboard Monitor (full)  & Clipboard        & \textbf{93.1} & \textbf{89.2} & \textbf{0.911} \\
         \bottomrule
-    \end{tabular}
+    \end{tabular}%
+    }
     \label{tab:ablation}
 \end{table}
 
@@ -207,75 +106,27 @@ The ablation results confirm that each additional agent produces a measurable im
 
 The small contribution of the Gaze Tracker is consistent with its individual performance (F1 = 0.695 standalone); when fused with Vision Guard, much of the true positive signal it provides is already captured by Vision Guard (because sessions involving gaze-away violations also tend to involve face-pose changes detectable by YOLO), while its false positives (legitimate keyboard glances) introduce noise.
 
-\section{Precision-Recall Trade-off}
+\section{Precision-Recall and Multi-Agent Performance Trade-off}
 
-Figure~\ref{fig:prcurve} shows the Precision-Recall (PR) curve for the fused pipeline at varying composite risk score thresholds for generating an alert. This curve characterises the trade-off between precision (avoiding false alerts) and recall (catching all violations).
+Figure~\ref{fig:prcurve} shows the multi-agent detection capability and operating balance for the fused SentinelAI pipeline across individual sensory modalities.
 
 \begin{figure}[htbp]
     \centering
-    \begin{tikzpicture}
-    \begin{axis}[
-        csbase,
-        height=6.0cm,
-        xlabel={Recall},
-        ylabel={Precision},
-        xmin=0, xmax=1.0,
-        ymin=0.5, ymax=1.02,
-        title={Precision-Recall Curve --- Fused SentinelAI Pipeline},
-        legend pos=south west,
-    ]
-    \addplot[csblue, thick, smooth, mark=*, mark size=1.5pt] coordinates {
-        (0.0,1.00)(0.10,0.99)(0.20,0.98)(0.30,0.97)
-        (0.40,0.97)(0.50,0.96)(0.60,0.95)(0.70,0.94)
-        (0.80,0.93)(0.89,0.93)(0.92,0.91)(0.95,0.88)
-        (0.97,0.84)(0.99,0.77)(1.00,0.65)
-    };
-    \addlegendentry{SentinelAI fused pipeline}
-    % Mark operating point
-    \addplot[mark=diamond*, mark size=4pt, csred, only marks] coordinates {(0.89, 0.93)};
-    \addlegendentry{Operating point ($r \geq 0.40$ threshold)}
-    \end{axis}
-    \end{tikzpicture}
-    \caption{Precision-Recall curve for the SentinelAI fused pipeline at varying alert-threshold values of the composite risk score $r$. The operating point (diamond marker) corresponds to the default threshold configuration ($r \geq 0.40$ = MEDIUM tier and above generates an alert record), achieving precision 93\% and recall 89\%. Area under the PR curve (AUPRC) = 0.942.}
+    \includegraphics[width=0.75\linewidth]{agent_performance_radar.jpg}
+    \caption{Multi-agent performance radar chart benchmarking precision, recall, latency, and noise resilience across individual detection modules.}
     \label{fig:prcurve}
 \end{figure}
 
-The Area Under the PR Curve (AUPRC) of 0.942 indicates strong discriminative performance across the full range of threshold settings. The curve remains above 0.90 precision until recall exceeds 0.95, indicating that very high recall rates are achievable without unacceptable precision degradation.
+The evaluation indicates strong discriminative performance across the full range of modalities.
 
-\section{Alert Latency Analysis}
+\section{Alert Latency and Examination Completion Dynamics}
 
-Figure~\ref{fig:latency} shows the cumulative distribution function (CDF) of end-to-end alert latency, measured across all 1,247 alert events generated during the evaluation.
+Figure~\ref{fig:latency} illustrates the examination session timeline dynamics and completion heatmaps across all evaluation candidate cohorts.
 
 \begin{figure}[htbp]
     \centering
-    \begin{tikzpicture}
-    \begin{axis}[
-        csbase,
-        height=6.0cm,
-        xlabel={End-to-End Alert Latency (ms)},
-        ylabel={Cumulative Fraction of Alerts},
-        xmin=0, xmax=2200,
-        ymin=0, ymax=1.05,
-        xtick={0,200,400,600,720,800,1000,1200,1400,1600,1800,2000},
-        xticklabel style={rotate=45, anchor=east, font=\footnotesize},
-        title={CDF of End-to-End Alert Latency --- All 1{,}247 Alert Events},
-    ]
-    \addplot[csblue, thick, smooth] coordinates {
-        (0,0.00)(100,0.02)(200,0.07)(300,0.18)(400,0.31)(500,0.45)
-        (600,0.56)(700,0.63)(720,0.65)(800,0.74)(900,0.81)
-        (1000,0.88)(1100,0.92)(1200,0.95)(1400,0.97)
-        (1600,0.985)(1800,0.993)(2000,0.998)(2200,1.00)
-    };
-    \addlegendentry{SentinelAI latency CDF}
-    % Median marker
-    \addplot[dashed, csorange, thick, samples=2] coordinates {(720,0)(720,1.05)};
-    \addlegendentry{Median (720\,ms)}
-    % Target marker
-    \addplot[dashed, csred, thick, samples=2] coordinates {(1000,0)(1000,1.05)};
-    \addlegendentry{1000\,ms target}
-    \end{axis}
-    \end{tikzpicture}
-    \caption{CDF of end-to-end alert latency across all 1,247 alert events in the evaluation. Median latency is 720\,ms. 88\% of alerts are delivered within the 1000\,ms target. The long tail (alerts above 1200\,ms) corresponds to events generated by the Acoustic VAD agent, which processes audio in 160\,ms batches and may accumulate up to 1600\,ms of queuing delay during peak session load.}
+    \includegraphics[width=0.88\linewidth]{exam_completion_heatmap.jpg}
+    \caption{Temporal session heatmap tracking candidate engagement, alert density distributions, and final submission intervals across the 160-session evaluation cohort.}
     \label{fig:latency}
 \end{figure}
 

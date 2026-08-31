@@ -14,8 +14,8 @@
 % for more info...
 %=============================================================================
 \NeedsTeXFormat{LaTeX2e}
-\ProvidesClass{iitbaps}[2007/06/25 IIT Bombay Annual Preogress Report Format]
-\typeout{Document Class `iitbaps' v0.5beta <13 August 07>}
+\ProvidesClass{final_raitdisser}[2026/08/31 D Y Patil University Dissertation Format]
+\typeout{Document Class `final_raitdisser' v1.0}
 
 
 %=============================================================================
