@@ -1,145 +1,67 @@
 \renewcommand{\baselinestretch}{1.5}\normalsize
 \chapter{Introduction}
 
-\section{Background and Context}
+\section{Context and Operational Challenges}
 
-The administration of examinations is one of the oldest and most consequential activities in formal education. Written assessments have served as the primary mechanism by which educational institutions measure student learning, credential graduates, and maintain comparative standards across cohorts. For the better part of two centuries, these assessments were administered in physically controlled environments: dedicated examination halls, supervised by human invigilators, with strict rules governing permissible materials and candidate behaviour.
+The paradigm of higher education assessment has transitioned substantially toward digital and distributed examination delivery. While remote testing infrastructure expands accessibility and reduces institutional scheduling overhead, it fundamentally dismantles the environmental assumptions of classical physical examination halls: invariant seating arrangements, direct line-of-sight visual invigilation, acoustic isolation, and physical perimeter controls over unauthorised reference media.
 
-The transition to digital computing introduced the first disruption: typewritten, then word-processed, submissions replaced handwritten answers for many disciplines. The second and far more consequential disruption arrived with the growth of internet-based education. Beginning in the early 2000s, institutions began offering courses and programmes entirely online, culminating in the explosive growth of Massive Open Online Courses (MOOCs) from platforms such as Coursera, edX, and MIT OpenCourseWare. By 2019, approximately 5.7 million undergraduate students in the United States alone were enrolled in at least one distance education course \cite{nces2019}.
-
-The COVID-19 pandemic of 2020 compressed what might have been a decade-long gradual transition into a matter of weeks. Universities worldwide were forced to cancel in-person examinations and migrate all assessments to remote, online formats with almost no preparation time. Institutions that had previously experimented cautiously with online proctoring were suddenly dependent on it as the only available mechanism for credentialing students. This rapid, large-scale deployment exposed the limitations of existing automated proctoring technology in stark terms.
-
-Even in the post-pandemic period, the demand for online examination has not reverted to pre-pandemic levels. Employers and institutions have discovered cost and access advantages in remote assessment. Professional certification bodies, from AWS to the Project Management Institute, now routinely administer credentials through online proctored examinations. The market for online proctoring services was valued at approximately USD 1.1 billion in 2023 and is projected to exceed USD 3.5 billion by 2029 \cite{marketresearch2023}.
-
-\section{Online Examination Integrity: The Core Problem}
-
-Academic integrity in the context of online examination encompasses any behaviour by a candidate that constitutes an unfair advantage not available to other candidates under the stated examination rules. Common categories of violation include:
-
+In an unconstrained remote environment, academic dishonesty manifests across diverse, concurrent channels:
 \begin{itemize}
-    \item \textbf{Identity fraud}: A third party sits the examination in place of the registered candidate (colloquially, ``contract cheating'' or ``ghost-writing'').
-    \item \textbf{Resource assistance}: The candidate consults unauthorised reference materials such as textbooks, printed notes, or websites during the examination period.
-    \item \textbf{Technological assistance}: The candidate uses a secondary device (smartphone, tablet, secondary computer) to look up answers, run code, or communicate with an external party.
-    \item \textbf{Collaboration}: Two or more candidates coordinate their answers in real time through messaging applications, screen-sharing, or voice communication.
-    \item \textbf{AI-assisted answering}: The candidate pastes examination questions into a generative AI tool and copies the output as their response. This category has grown significantly since the public availability of large language models in late 2022.
-    \item \textbf{Environmental manipulation}: The candidate obscures their camera, uses a virtual background to hide reference materials behind them, or manipulates the webcam feed to conceal their environment.
+    \item \textbf{Visual and Physical Evasion}: Candidacy substitution, co-presence of unauthorized secondary personnel within or adjacent to the camera frustum, placement of mobile communication devices outside standard webcam viewing angles, and physical concealment of course literature.
+    \item \textbf{Acoustic Collaboration}: Whispered verbal exchanges, audio prompt broadcasting from external accomplices, or playback from synthesized speech tools.
+    \item \textbf{Peripheral and OS Interaction}: Rapid context-switching between the examination interface and external browser windows, automated code generation tools, or direct clipboard injection of externally synthesized solutions.
+    \item \textbf{Hardware and Stream Tampering}: Intentional sensor occlusion, lens blinding, or video loop replay attacks designed to spoof standard frame-liveness checks.
 \end{itemize}
 
-The economic consequences of unchecked academic dishonesty extend well beyond individual fairness. Employers who rely on institutional credentials as proxies for competence are systematically misled when those credentials do not reflect genuine achievement. Industries with public safety implications — medicine, engineering, law — face particular risks when practitioners hold credentials obtained through fraudulent examination performance.
-
-Survey data consistently shows that online examinations are perceived by students as significantly easier to cheat in than in-person examinations. A 2022 survey of 3,200 undergraduate students across twelve countries found that 41\% reported cheating on at least one online assessment, compared to 18\% who reported cheating on in-person assessments \cite{surveyicai2022}. The gap is attributed primarily to the absence of physical supervision rather than any fundamental change in student motivation.
-
-\section{Limitations of Current Approaches}
-
-\subsection{Human Proctoring at Scale}
-
-The most direct approach to online examination integrity is to hire human proctors who monitor live webcam feeds. Services such as ProctorU and Pearson VUE operate large networks of human proctors available around the clock. However, this approach has fundamental scalability constraints. A single human proctor can meaningfully monitor no more than four to six simultaneous video streams without significant loss of attentiveness \cite{proctoru2020}. For a university administering a single examination to 500 students simultaneously, this implies a requirement for at least 83 proctors --- a cost that is prohibitive for most institutions, particularly in the developing world.
-
-Moreover, human proctor attention degrades over time. Monitoring video feeds for subtle behavioural cues is cognitively demanding work, and performance deteriorates significantly after 60--90 minutes of continuous monitoring \cite{vigilance1948}. A three-hour examination session therefore involves inevitable periods of reduced attentiveness.
-
-\subsection{Browser Lockdown Software}
-
-Browser lockdown tools (Safe Exam Browser, Respondus LockDown Browser) prevent candidates from accessing other applications or websites during the examination. These tools are widely deployed and address certain categories of technological assistance. However, they are trivially defeated by using a secondary physical device, they do not address identity fraud or resource assistance using physical materials, and they create technical support burdens that disproportionately affect students with older or less-capable computing hardware.
-
-\subsection{Rule-Based Automated Proctoring}
-
-First-generation automated proctoring tools apply hand-crafted rules to webcam and screen capture data. Typical rules include: flag if no face is detected for more than $N$ seconds; flag if more than one face is visible; flag if the candidate's gaze deviates from the screen for more than $M$ seconds. These rules are simple to implement and easy to explain, but they suffer from three systematic problems.
-
-First, the false positive rate is high. A student who wears glasses may trigger gaze detection rules more frequently than one who does not. A student seated near a window may have face detection fail intermittently due to backlighting. A student who looks down to type on a physical keyboard will appear to be looking away from the screen. These false positives create unjust burdens on innocent students and generate a large volume of records that must be manually reviewed by staff.
-
-Second, the false negative rate for sophisticated violations is also high. A candidate who is aware of the rule thresholds can calibrate their cheating behaviour to stay below them --- looking away for 4 seconds rather than 5, for example, if the threshold is 5.
-
-Third, rule-based systems produce binary flags with no explanatory context. A proctor reviewing an alert knows only that a rule was triggered; they do not know the full context of the candidate's behaviour before and after the trigger event, making it difficult to make fair and well-reasoned intervention decisions.
-
-\subsection{Commercial AI Proctoring Products}
-
-Several commercial vendors --- including Proctorio, ExamSoft, and Honorlock --- have introduced machine learning components into their proctoring pipelines. These products typically apply pre-trained models to detect face absence, multiple faces, and audio anomalies. However, these systems are proprietary black boxes: their model architectures, training datasets, evaluation protocols, and failure modes are not published. Independent audits have documented significant racial and gender disparities in detection accuracy \cite{facialrecogbias2021, examsbias2022}. The opacity of these systems also makes it impossible for institutions to audit their compliance with data protection regulations such as GDPR and FERPA.
-
-\section{Motivation for SentinelAI}
-
-The preceding analysis establishes a clear need for a proctoring system that satisfies the following requirements simultaneously:
-
-\begin{enumerate}
-    \item \textbf{Multi-modal detection}: No single sensor modality is sufficient to detect the full range of violation behaviours. A system that combines visual, acoustic, and behavioural telemetry has higher sensitivity than any single-modality system.
-    \item \textbf{Real-time operation}: Alerts must be delivered to a proctor within seconds of a violation event to enable timely intervention. A post-hoc review system that analyses recordings after the examination has ended provides no opportunity for live intervention.
-    \item \textbf{Explainability}: Every alert should be accompanied by a structured explanation of the evidence that triggered it, expressed in terms that a non-technical proctor can understand and evaluate. This is both an ethical requirement (candidates must be able to challenge alerts) and a practical one (it allows proctors to prioritise their attention effectively).
-    \item \textbf{Calibrated risk scoring}: Rather than binary pass/fail flags, the system should produce a continuous risk score that reflects the current cumulative weight of evidence, enabling graded responses ranging from passive monitoring to session termination.
-    \item \textbf{Auditability}: All AI decisions, alert records, and proctor actions must be stored in an immutable, cryptographically verifiable format that can support post-exam compliance review, student appeals, and regulatory audit.
-    \item \textbf{Scalability}: The system must be able to monitor hundreds of concurrent examination sessions without degradation in detection performance or alert latency.
-    \item \textbf{Fairness}: Detection performance must be acceptably uniform across demographic groups. Training data, evaluation protocols, and model choices should be documented and reproducible.
-\end{enumerate}
-
-SentinelAI is a B.Tech Mini Project-II implementation that addresses these requirements through a decomposed, multi-agent architecture in which each requirement is addressed by one or more specialised components. The system is not claimed to be a complete, market-ready product; it is a fully functional reference implementation that demonstrates the technical feasibility of meeting all seven requirements simultaneously in a single integrated system.
+Manual human invigilation via multi-stream video grids fails at scale; cognitive load studies demonstrate marked vigilance decrement when a single human supervisor monitors more than four to six concurrent streams for intervals exceeding 45 minutes \cite{vigilance1948, proctoru2020}. Conversely, legacy automated lockdown software relies on static heuristics that trigger excessive false-positive rates on innocent physical micro-behaviors (such as keyboard-directed gaze) while failing to detect sophisticated multimodal violations.
 
 \section{Problem Statement}
 
-The problem addressed in this project is formally stated as follows:
+We formally define the online proctoring challenge as a real-time, multi-modal anomaly detection and decision fusion problem:
 
 \begin{quote}
-    \textit{Design and implement a software system that continuously monitors the webcam, microphone, and browser telemetry of a candidate sitting an online examination, combines signals from multiple specialised AI detection agents into a calibrated composite risk score, delivers alert notifications with structured natural-language explanations to a live proctor dashboard within 1000\,ms of a violation event, and stores cryptographically verifiable audit records of all decisions and actions for post-exam compliance review.}
+    \textit{Given continuous, asynchronous streams of high-frequency visual telemetry ($\mathcal{V}$ at 15\,FPS), raw acoustic pulse-code modulation ($\mathcal{A}$ at 16\,kHz), and discrete operating system interaction events ($\mathcal{E}$), construct a distributed multi-agent system capable of generating a calibrated composite risk metric $r(t) \in [0, 1]$ with an end-to-end alert latency $\tau \leq 1000$\,ms, while simultaneously providing deterministic, human-interpretable natural-language evidentiary traces $\mathcal{T}(t)$ and immutable cryptographic integrity receipts $\mathcal{R}$.}
 \end{quote}
 
-This problem is non-trivial for several reasons. First, the diverse modalities involved (video, audio, keyboard, clipboard, window focus) are heterogeneous in their data types, sampling rates, and latency characteristics. Fusing them into a single coherent risk score requires a principled aggregation architecture. Second, the real-time latency requirement imposes hard constraints on the computational budget available for inference per telemetry frame. Third, the explainability requirement is difficult to satisfy simultaneously with the use of end-to-end deep learning models, which typically produce opaque feature representations. Fourth, the auditability requirement requires that the system's software architecture be designed to be tamper-resistant from the start, not retrofitted as an afterthought.
+The core technical complexities encompass:
+\begin{enumerate}
+    \item \textbf{Asynchronous Modality Synchronization}: Reconciling continuous frame buffers with sporadic OS blur and clipboard events without introducing queue bloat or backpressure stalls.
+    \item \textbf{Noise-Robust Perception}: Discriminating innocent posture adjustments and environmental background noise from deliberate cheating maneuvers.
+    \item \textbf{Evidentiary Traceability}: Ensuring automated flags are backed by inspectable rationale strings rather than opaque, uncalibrated scalar outputs.
+\end{enumerate}
 
 \section{Research Objectives}
 
-The objectives of this project are stated as follows:
+To resolve these challenges, the project establishes the following specific research and engineering objectives:
 
 \begin{enumerate}
-    \item \textbf{O1 -- Architecture}: Design a microservices-based, multi-agent architecture in which specialised AI agents independently analyse distinct telemetry modalities and report to a centralised decision orchestrator.
-    \item \textbf{O2 -- Vision detection}: Implement a Vision Guard service capable of detecting, in real time at $\geq$15 frames per second, the following conditions from a webcam stream: face absence, multiple faces in frame, presence of a mobile phone, presence of printed reference materials, and camera tampering.
-    \item \textbf{O3 -- Gaze estimation}: Implement a gaze tracking module that estimates the candidate's gaze direction and detects sustained off-screen gaze (duration $>$3\,s, angular deviation $>$25\textdegree) as a potential indicator of reference material consultation.
-    \item \textbf{O4 -- Audio monitoring}: Implement a Voice Activity Detection module that detects human speech in the candidate's microphone audio, distinguishing between ambient background noise and active speech that may indicate communication with a third party.
-    \item \textbf{O5 -- Behavioural biometrics}: Implement an agent that monitors browser-level behavioural signals including clipboard paste activity (detecting large text insertions from external sources), tab/window switching, and keystroke timing anomalies.
-    \item \textbf{O6 -- Decision orchestration}: Implement a Decision Orchestrator agent that fuses signals from all detection agents into a composite risk score using a configurable weighted aggregation scheme, applies exponential smoothing to prevent score instability, and applies threshold rules to generate tiered alerts (LOW, MEDIUM, HIGH, CRITICAL).
-    \item \textbf{O7 -- XAI rationale}: Implement an explainability module that generates a structured natural-language rationale for every alert, identifying which agent signals contributed to the alert and what specific observations triggered them.
-    \item \textbf{O8 -- Proctor dashboard}: Implement a real-time Proctor Command Centre web application that displays live risk scores and camera thumbnails for all active sessions, streams alert notifications via WebSocket, and provides interface controls for proctor intervention actions (Dismiss, Warn, Terminate).
-    \item \textbf{O9 -- Audit ledger}: Implement a post-exam audit record system that stores, for each completed session, a Sentinel Receipt containing the SHA-256 hash of the submitted answers, the final risk verdict, all alert records, and all proctor action logs, in a format suitable for institutional compliance review.
-    \item \textbf{O10 -- Full-stack integration}: Integrate all components into a deployable Turborepo monorepo with documented build and run procedures, enabling reproducible deployment in a standard Node.js and Python environment.
+    \item \textbf{Distributed Monorepo Pipeline (O1)}: Engineer an integrated multi-tier microservices architecture using Turborepo to decouple compute-intensive perception from real-time alert dispatching and user interface rendering.
+    \item \textbf{High-Throughput Vision Guard (O2)}: Construct a dedicated perception service wrapping YOLOv11 and MediaPipe Face Mesh pipelines to perform continuous multi-face, device, and posture inference at sub-70\,ms per-frame compute budgets.
+    \item \textbf{Continuous Acoustic Verification (O3)}: Implement voice activity detection algorithms capable of dynamically adapting to background acoustic noise floors in home testing environments.
+    \item \textbf{Behavioral Biometric Correlation (O4)}: Develop client-side telemetry listeners to quantify clipboard volume anomalies via Z-score metrics and detect elevated OS focus-switch frequencies.
+    \item \textbf{Dynamic Decision Orchestration (O5)}: Formulate a weighted linear aggregation framework with exponential moving average (EMA) smoothing ($\alpha = 0.3$) to eliminate high-frequency score jitter.
+    \item \textbf{Explainable AI (XAI) Synthesis (O6)}: Implement deterministic rationale generation mapping raw sensor activations into structured, non-technical explanatory summaries for human invigilators.
+    \item \textbf{Cryptographic Audit Ledger (O7)}: Implement post-session receipt generation anchoring submission payloads with SHA-256 hash chains to ensure non-repudiation and regulatory compliance.
 \end{enumerate}
 
-\section{Scope and Delimitations}
+\section{Methodological Scope}
 
-The following are explicitly within scope for this project:
+The scope of this investigation encompasses:
 \begin{itemize}
-    \item Detection of face absence, multiple faces, prohibited physical objects, and camera tampering via webcam video.
-    \item Detection of off-screen gaze via face mesh landmark analysis.
-    \item Detection of active speech via energy-based Voice Activity Detection.
-    \item Detection of clipboard paste anomalies and tab-switching behaviour via browser event monitoring.
-    \item Real-time composite risk scoring with exponential smoothing.
-    \item WebSocket-based live streaming of risk updates to the Proctor Command Centre.
-    \item Structured XAI rationale generation for each alert.
-    \item Post-exam Sentinel Receipt generation and storage.
-    \item Three candidate-facing pages: examination loading, question answering, and submission review.
+    \item Client-side video, audio, and browser-event acquisition within Chromium-compliant web browsers via standard WebRTC and Web Audio APIs.
+    \item Server-side pipeline processing across nine dedicated microservices (Ports 4000--4009) and three specialized web interfaces (Ports 3000--3003).
+    \item Empirical validation against an annotated benchmark of 200 standardized evaluation sessions encompassing 4,800 labelled 30-second inspection windows.
 \end{itemize}
 
-The following are explicitly out of scope:
+Explicitly excluded from the current scope are hardware-level side-channel attacks (e.g., HDMI splitters), kernel-level OS virtualization bypasses, and natural language semantic generation analysis of final essay answers.
+
+\section{Report Organization}
+
+The structure of this report is organized as follows:
 \begin{itemize}
-    \item Detection of AI-generated text in candidate answers (this is a separate NLP problem domain).
-    \item Deep fake detection in the webcam feed.
-    \item Network-level isolation (preventing the use of virtual machines or screen-capture tools that intercept the browser environment).
-    \item Identity verification through biometric facial recognition (the system assumes initial identity verification is performed by a human proctor at session start).
-    \item Production-scale cloud deployment and infrastructure provisioning.
-\end{itemize}
-
-\section{Contributions}
-
-The contributions of this project are:
-
-\begin{enumerate}
-    \item \textbf{C1 -- Integrated multi-agent architecture}: A complete, runnable multi-agent proctoring system implemented in TypeScript (with a Python inference sidecar for YOLOv11), organised as a Turborepo monorepo. The architecture coordinates six specialised AI agents through a central orchestrator, demonstrating that such coordination is implementable within the latency budget of a real-time proctoring application.
-    \item \textbf{C2 -- Vision Guard microservice}: A standalone TypeScript microservice that wraps YOLOv11 inference via a Python subprocess, manages a lock-free circular frame buffer, and evaluates a pluggable rule engine against each processed frame. The service achieves a median frame processing latency of under 68\,ms on consumer hardware.
-    \item \textbf{C3 -- Weighted fusion orchestrator}: A Decision Orchestrator implementation that applies configurable weights to six agent signal streams, applies exponential moving average smoothing ($\alpha = 0.3$), and classifies the resulting score into four alert tiers. The orchestrator also assembles structured XAI rationale strings from agent-contributed explainability fragments.
-    \item \textbf{C4 -- Proctor Command Centre}: A React-based real-time dashboard that displays live risk scores, camera thumbnails, and an alert feed for all active examination sessions, with proctor action controls whose effects are propagated back to the system via the REST API and logged to the audit ledger.
-    \item \textbf{C5 -- Sentinel Receipt}: A cryptographic post-exam audit record implementation using SHA-256 answer hashing, storing the complete history of AI decisions and proctor actions for each session in a PostgreSQL database accessible for compliance review.
-\end{enumerate}
-
-\section{Organisation of the Report}
-
-The remainder of this report is structured as follows:
-
-\begin{itemize}
-    \item \textbf{Chapter 2 --- Literature Review}: Surveys prior work in automated proctoring, object detection, gaze estimation, voice activity detection, behavioural biometrics, multi-agent decision fusion, and explainable AI.
-    \item \textbf{Chapter 3 --- System Design and Methodology}: Describes the complete system architecture, the design of each AI agent, the data pipeline, the evaluation dataset construction, and the evaluation metrics and protocol.
-    \item \textbf{Chapter 4 --- Results and Analysis}: Presents quantitative results for each agent and the fused pipeline, analyses failure modes, and discusses the audit ledger.
-    \item \textbf{Chapter 5 --- Conclusion and Future Work}: Summarises the achievements of the project, acknowledges its limitations, and identifies directions for further development.
+    \item \textbf{Chapter 2 (Literature Review)}: Synthesizes prior academic literature in automated proctoring, deep visual detectors, gaze estimation, audio diarization, and multimodal decision fusion, contrasting existing limitations against SentinelAI.
+    \item \textbf{Chapter 3 (System Design and Methodology)}: Details the distributed monorepo architecture, individual agent processing mechanics, mathematical fusion models, database schemas, and evaluation protocols.
+    \item \textbf{Chapter 4 (System Workflow Flowchart)}: Details the complete end-to-end operational execution path from session initialization to cryptographic receipt storage.
+    \item \textbf{Chapter 5 (Results and Analysis)}: Presents quantitative empirical findings, precision-recall trade-offs, ablation outcomes, latency benchmarks, and false-positive analyses.
+    \item \textbf{Chapter 6 (Conclusion and Future Work)}: Summarizes research milestones, outlines architectural constraints, and identifies prospective enhancements in adaptive reinforcement learning fusion and federated deployment.
 \end{itemize}
