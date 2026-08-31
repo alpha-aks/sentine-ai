@@ -26,10 +26,8 @@ npm install
 echo -e "\n${YELLOW}[2/5] Building Helper Packages...${NC}"
 npx turbo run build --filter="@sentinel-ai/*"
 
-echo -e "\n${YELLOW}[3/5] Setting up Database & Running Schema Migrations...${NC}"
-# Generates Prisma client and deploys any pending PostgreSQL migrations
-npx prisma generate
-npx prisma migrate deploy || echo -e "${YELLOW}Warning: Prisma migration failed. Ensure DATABASE_URL is configured in your .env file.${NC}"
+echo -e "\n${YELLOW}[3/5] Database Initialization Check...${NC}"
+echo -e "${GREEN}PostgreSQL database schema will be auto-initialized on service boot.${NC}"
 
 echo -e "\n${YELLOW}[4/5] Configuring Python Environment for Vision Guard...${NC}"
 cd services/vision-guard-service
