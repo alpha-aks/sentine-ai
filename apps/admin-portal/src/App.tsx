@@ -56,7 +56,6 @@ export default function App() {
       ws.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
-          if (data.type === 'ALERT') {
           if (data.type === 'CANDIDATE_LOGIN') {
             const payload = data.payload || data;
             setActionNotice(`🎓 Candidate Logged In: ${payload.candidateName} has joined session ${payload.sessionId}`);
