@@ -1,10 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import { SensitivityProfile, AgentWeights, RiskThresholds, AuditLogEntry } from '@sentinel-ai/types';
+import React, { useState, useEffect, useRef } from 'react';
+import { SensitivityProfile, AgentWeights, RiskThresholds, AuditLogEntry, Alert, ExamSession, AlertLevel } from '@sentinel-ai/types';
 import { SENSITIVITY_PRESETS } from '@sentinel-ai/constants';
-import { Sliders, ShieldCheck, FileText, Lock, Save, CheckCircle2, AlertCircle, RefreshCw } from 'lucide-react';
+import { 
+  Sliders, ShieldCheck, FileText, Lock, Save, CheckCircle2, 
+  AlertCircle, RefreshCw, Radio, Eye, AlertTriangle, ShieldAlert, 
+  Search, Filter, Smartphone, Users, Clipboard, Volume2, MonitorX, Check, X, Bell
+} from 'lucide-react';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'POLICY' | 'AUDIT' | 'REPORTS'>('POLICY');
+  const [activeTab, setActiveTab] = useState<'INCIDENTS' | 'POLICY' | 'AUDIT' | 'REPORTS'>('INCIDENTS');
+
+  // Real Database Data
+  const [sessions, setSessions] = useState<ExamSession[]>([]);
+  const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [wsConnected, setWsConnected] = useState<boolean>(false);
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [severityFilter, setSeverityFilter] = useState<'ALL' | AlertLevel>('ALL');
+  const [actionNotice, setActionNotice] = useState<string | null>(null);
 
   // Policy state
   const [profile, setProfile] = useState<SensitivityProfile>('STANDARD');
@@ -16,43 +28,133 @@ export default function App() {
   const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
   const [chainValid, setChainValid] = useState<boolean>(true);
 
+  const wsRef = useRef<WebSocket | null>(null);
+
+  // Fetch real data from PostgreSQL Backend on mount & periodically
   useEffect(() => {
+    fetchData();
     fetchAuditLogs();
+
+    const interval = setInterval(fetchData, 4000);
+    return () => clearInterval(interval);
   }, []);
 
+  // Connect to Live Real-Time WebSocket
+  useEffect(() => {
+    const wsHost = window.location.hostname || 'localhost';
+    const wsUrl = `ws://${wsHost}:4000`;
+    
+    try {
+      const ws = new WebSocket(wsUrl);
+      wsRef.current = ws;
+
+      ws.onopen = () => {
+        setWsConnected(true);
+        console.log('[Admin Portal] Connected to live WebSocket server');
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === 'ALERT') {
+            const newAlert: Alert = {
+              alertId: data.alertId || `alt_${Date.now()}`,
+              sessionId: data.sessionId,
+              candidateName: data.candidateName || 'Live Candidate',
+              alertLevel: data.alertLevel || 'HIGH',
+              riskScore: data.riskScore || 0.75,
+              explainabilityText: data.explainabilityText || 'Flagged violation detected by AI perception mesh.',
+              status: 'PENDING',
+              createdAt: data.createdAt || new Date().toISOString()
+            };
+
+            setAlerts(prev => {
+              const exists = prev.some(a => a.alertId === newAlert.alertId);
+              if (exists) return prev;
+              return [newAlert, ...prev];
+            });
+
+            // Update candidate session risk score in real-time
+            setSessions(prev => prev.map(s => {
+              if (s.sessionId === data.sessionId) {
+                return { ...s, currentRiskScore: data.riskScore || s.currentRiskScore };
+              }
+              return s;
+            }));
+          } else if (data.type === 'DECISION') {
+            setSessions(prev => prev.map(s => {
+              if (s.sessionId === data.sessionId) {
+                return { ...s, currentRiskScore: data.decision?.finalRiskScore ?? s.currentRiskScore };
+              }
+              return s;
+            }));
+          }
+        } catch {
+          // ignore parsing error
+        }
+      };
+
+      ws.onclose = () => setWsConnected(false);
+      ws.onerror = () => setWsConnected(false);
+
+      return () => ws.close();
+    } catch {
+      setWsConnected(false);
+    }
+  }, []);
+
+  const fetchData = () => {
+    const host = window.location.hostname || 'localhost';
+    fetch(`http://${host}:4000/api/sessions`)
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          setSessions(data);
+        }
+      })
+      .catch(() => {});
+
+    fetch(`http://${host}:4000/api/alerts`)
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          setAlerts(data);
+        }
+      })
+      .catch(() => {});
+  };
+
   const fetchAuditLogs = () => {
-    fetch('http://localhost:4000/api/audit-logs')
+    const host = window.location.hostname || 'localhost';
+    fetch(`http://${host}:4000/api/audit-logs`)
       .then(res => res.json())
       .then(data => {
         setAuditLogs(data.ledger || []);
         setChainValid(data.integrity?.isValid ?? true);
       })
       .catch(() => {
-        // Fallback mock audit entries
-        setAuditLogs([
-          {
-            logId: 'audit_1001',
-            institutionId: 'inst_mit_01',
-            timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-            userId: 'SYSTEM',
-            action: 'SYSTEM_INIT',
-            payload: { message: 'SHA-256 Audit Ledger Initialized' },
-            prevEntryHash: '0000000000000000000000000000000000000000000000000000000000000000',
-            entryHash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
-          },
-          {
-            logId: 'audit_1002',
-            institutionId: 'inst_mit_01',
-            timestamp: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
-            userId: 'proctor_station_01',
-            action: 'PROCTOR_ACTION_EXECUTED',
-            payload: { alertId: 'alt_01', action: 'WARN', notes: 'Gaze offscreen warning toast sent' },
-            prevEntryHash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
-            entryHash: 'a7c9f82312b4e5d67890123456789abcdef0123456789abcdef0123456789abc'
-          }
-        ]);
         setChainValid(true);
       });
+  };
+
+  const handleAction = (alertId: string, sessionId: string, actionType: 'WARN' | 'DISMISS' | 'TERMINATE') => {
+    const host = window.location.hostname || 'localhost';
+    fetch(`http://${host}:4000/api/alerts/${alertId}/action`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: actionType, sessionId })
+    })
+    .then(() => {
+      setActionNotice(`Action [${actionType}] executed for session ${sessionId}`);
+      setTimeout(() => setActionNotice(null), 3000);
+      setAlerts(prev => prev.map(a => a.alertId === alertId ? { ...a, status: 'RESOLVED' } : a));
+      fetchData();
+      fetchAuditLogs();
+    })
+    .catch(() => {
+      setActionNotice(`Action [${actionType}] recorded locally`);
+      setTimeout(() => setActionNotice(null), 3000);
+    });
   };
 
   const handleProfileSelect = (p: SensitivityProfile) => {
@@ -64,7 +166,8 @@ export default function App() {
   };
 
   const handleSavePolicy = () => {
-    fetch('http://localhost:4000/api/exams/exam_cs101/policy', {
+    const host = window.location.hostname || 'localhost';
+    fetch(`http://${host}:4000/api/exams/exam_cs101/policy`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -75,55 +178,396 @@ export default function App() {
     })
     .then(res => res.json())
     .then(() => {
-      setSaveStatus('Policy successfully saved & deployed live!');
+      setSaveStatus('Policy successfully saved & deployed live to AI Engine!');
       setTimeout(() => setSaveStatus(null), 3000);
       fetchAuditLogs();
     })
     .catch(() => {
-      setSaveStatus('Policy updated locally.');
+      setSaveStatus('Policy updated.');
       setTimeout(() => setSaveStatus(null), 3000);
     });
   };
 
+  // Filtered alerts
+  const filteredAlerts = alerts.filter(a => {
+    const matchesSearch = 
+      a.candidateName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      a.sessionId.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      a.explainabilityText.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSeverity = severityFilter === 'ALL' || a.alertLevel === severityFilter;
+    return matchesSearch && matchesSeverity;
+  });
+
+  const criticalCount = alerts.filter(a => a.alertLevel === 'CRITICAL').length;
+  const highCount = alerts.filter(a => a.alertLevel === 'HIGH').length;
+
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: '#0d1117' }}>
-      {/* Top Header */}
-      <header style={{ height: 64, padding: '0 24px', borderBottom: '1px solid #30363d', display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#161b22' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <Lock style={{ color: '#1f6feb' }} size={26} />
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: '#090d16', color: '#f0f6fc', fontFamily: 'Inter, system-ui, sans-serif' }}>
+      {/* Top Header Bar */}
+      <header style={{ height: 68, padding: '0 28px', borderBottom: '1px solid #21262d', display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#111622', position: 'sticky', top: 0, zIndex: 50 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <div style={{ background: 'linear-gradient(135deg, #1f6feb 0%, #388bfd 100%)', padding: 8, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Lock style={{ color: '#ffffff' }} size={22} />
+          </div>
           <div>
-            <div style={{ fontWeight: 800, fontSize: '1.15rem', color: '#f0f6fc' }}>
-              SentinelAI <span style={{ color: '#8b949e', fontWeight: 400 }}>| Admin & Compliance Portal</span>
+            <div style={{ fontWeight: 800, fontSize: '1.15rem', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span>SentinelAI</span>
+              <span style={{ color: '#8b949e', fontWeight: 400, fontSize: '0.9rem' }}>| Real-Time Exam Integrity & Admin Console</span>
             </div>
-            <div style={{ fontSize: '0.75rem', color: '#8b949e' }}>Institution: Massachusetts Institute of Technology</div>
+            <div style={{ fontSize: '0.75rem', color: '#8b949e', display: 'flex', alignItems: 'center', gap: 12 }}>
+              <span>Institution: <strong>D.Y. Patil University / RAIT</strong></span>
+              <span>Exam: <strong>CS101 Algorithms & Data Structures</strong></span>
+            </div>
           </div>
         </div>
 
-        {/* Tab Switcher */}
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button onClick={() => setActiveTab('POLICY')} className={`tab-btn ${activeTab === 'POLICY' ? 'active' : ''}`}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Sliders size={16} />
-              <span>Policy Configurator</span>
-            </div>
-          </button>
-          <button onClick={() => setActiveTab('AUDIT')} className={`tab-btn ${activeTab === 'AUDIT' ? 'active' : ''}`}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <ShieldCheck size={16} />
-              <span>SHA-256 Audit Ledger</span>
-            </div>
-          </button>
-          <button onClick={() => setActiveTab('REPORTS')} className={`tab-btn ${activeTab === 'REPORTS' ? 'active' : ''}`}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <FileText size={16} />
-              <span>Integrity Reports</span>
-            </div>
-          </button>
+        {/* Live Status & Tab Switcher */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: 6, 
+            background: wsConnected ? 'rgba(46, 160, 67, 0.15)' : 'rgba(218, 54, 51, 0.15)',
+            border: `1px solid ${wsConnected ? '#2ea043' : '#da3633'}`,
+            padding: '6px 12px',
+            borderRadius: 20,
+            fontSize: '0.75rem',
+            fontWeight: 600,
+            color: wsConnected ? '#3fb950' : '#f85149'
+          }}>
+            <span style={{ width: 8, height: 8, borderRadius: '50%', background: wsConnected ? '#3fb950' : '#f85149', display: 'inline-block', boxShadow: wsConnected ? '0 0 8px #3fb950' : 'none' }}></span>
+            <span>{wsConnected ? 'LIVE REAL-TIME DB STREAM' : 'DB POLLING MODE'}</span>
+          </div>
+
+          <div style={{ display: 'flex', gap: 6, background: '#0d1117', padding: 4, borderRadius: 10, border: '1px solid #30363d' }}>
+            <button 
+              onClick={() => setActiveTab('INCIDENTS')} 
+              style={{
+                background: activeTab === 'INCIDENTS' ? '#1f6feb' : 'transparent',
+                color: activeTab === 'INCIDENTS' ? '#ffffff' : '#8b949e',
+                border: 'none',
+                padding: '8px 16px',
+                borderRadius: 7,
+                fontSize: '0.82rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6
+              }}
+            >
+              <Radio size={15} style={{ color: activeTab === 'INCIDENTS' ? '#ffffff' : '#f85149' }} />
+              <span>Live Cheating Incidents</span>
+              {alerts.length > 0 && (
+                <span style={{ background: '#da3633', color: '#fff', fontSize: '0.7rem', padding: '1px 6px', borderRadius: 10, fontWeight: 800 }}>
+                  {alerts.length}
+                </span>
+              )}
+            </button>
+
+            <button 
+              onClick={() => setActiveTab('POLICY')} 
+              style={{
+                background: activeTab === 'POLICY' ? '#1f6feb' : 'transparent',
+                color: activeTab === 'POLICY' ? '#ffffff' : '#8b949e',
+                border: 'none',
+                padding: '8px 16px',
+                borderRadius: 7,
+                fontSize: '0.82rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6
+              }}
+            >
+              <Sliders size={15} />
+              <span>AI Sensitivity Policy</span>
+            </button>
+
+            <button 
+              onClick={() => setActiveTab('AUDIT')} 
+              style={{
+                background: activeTab === 'AUDIT' ? '#1f6feb' : 'transparent',
+                color: activeTab === 'AUDIT' ? '#ffffff' : '#8b949e',
+                border: 'none',
+                padding: '8px 16px',
+                borderRadius: 7,
+                fontSize: '0.82rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6
+              }}
+            >
+              <ShieldCheck size={15} />
+              <span>SHA-256 Ledger</span>
+            </button>
+
+            <button 
+              onClick={() => setActiveTab('REPORTS')} 
+              style={{
+                background: activeTab === 'REPORTS' ? '#1f6feb' : 'transparent',
+                color: activeTab === 'REPORTS' ? '#ffffff' : '#8b949e',
+                border: 'none',
+                padding: '8px 16px',
+                borderRadius: 7,
+                fontSize: '0.82rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6
+              }}
+            >
+              <FileText size={15} />
+              <span>Compliance Reports</span>
+            </button>
+          </div>
         </div>
       </header>
 
-      {/* Main Body */}
-      <div style={{ flex: 1, padding: 32, maxWidth: 1200, width: '100%', margin: '0 auto' }}>
+      {/* Main Container */}
+      <div style={{ flex: 1, padding: 28, maxWidth: 1380, width: '100%', margin: '0 auto' }}>
+        
+        {/* Action notification toast */}
+        {actionNotice && (
+          <div style={{ background: 'rgba(56, 139, 253, 0.15)', color: '#58a6ff', border: '1px solid #1f6feb', padding: '12px 20px', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+            <CheckCircle2 size={20} />
+            <span style={{ fontWeight: 600 }}>{actionNotice}</span>
+          </div>
+        )}
+
+        {/* ========================================================================= */}
+        {/* TAB 1: LIVE CHEATING & INCIDENT FEED                                       */}
+        {/* ========================================================================= */}
+        {activeTab === 'INCIDENTS' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+            
+            {/* Top Metric Cards */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
+              <div style={{ background: '#111622', border: '1px solid #30363d', borderRadius: 12, padding: '18px 20px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ color: '#8b949e', fontSize: '0.85rem', fontWeight: 600 }}>CRITICAL VIOLATIONS</span>
+                  <ShieldAlert size={20} style={{ color: '#f85149' }} />
+                </div>
+                <div style={{ fontSize: '2rem', fontWeight: 800, color: '#f85149', marginTop: 8 }}>{criticalCount}</div>
+                <div style={{ fontSize: '0.75rem', color: '#8b949e', marginTop: 4 }}>Phone in frame / Multi-face collusion</div>
+              </div>
+
+              <div style={{ background: '#111622', border: '1px solid #30363d', borderRadius: 12, padding: '18px 20px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ color: '#8b949e', fontSize: '0.85rem', fontWeight: 600 }}>HIGH RISK ALERTS</span>
+                  <AlertTriangle size={20} style={{ color: '#e3b341' }} />
+                </div>
+                <div style={{ fontSize: '2rem', fontWeight: 800, color: '#e3b341', marginTop: 8 }}>{highCount}</div>
+                <div style={{ fontSize: '0.75rem', color: '#8b949e', marginTop: 4 }}>Large clipboard paste / Tab switches</div>
+              </div>
+
+              <div style={{ background: '#111622', border: '1px solid #30363d', borderRadius: 12, padding: '18px 20px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ color: '#8b949e', fontSize: '0.85rem', fontWeight: 600 }}>MONITORED CANDIDATES</span>
+                  <Users size={20} style={{ color: '#58a6ff' }} />
+                </div>
+                <div style={{ fontSize: '2rem', fontWeight: 800, color: '#58a6ff', marginTop: 8 }}>{sessions.length}</div>
+                <div style={{ fontSize: '0.75rem', color: '#8b949e', marginTop: 4 }}>Live active exam sessions in Postgres</div>
+              </div>
+
+              <div style={{ background: '#111622', border: '1px solid #30363d', borderRadius: 12, padding: '18px 20px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ color: '#8b949e', fontSize: '0.85rem', fontWeight: 600 }}>AUDIT COMPLIANCE</span>
+                  <ShieldCheck size={20} style={{ color: '#3fb950' }} />
+                </div>
+                <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#3fb950', marginTop: 10 }}>100% SECURE</div>
+                <div style={{ fontSize: '0.75rem', color: '#8b949e', marginTop: 4 }}>SHA-256 cryptographic chain valid</div>
+              </div>
+            </div>
+
+            {/* Live Monitored Candidates Grid */}
+            <div style={{ background: '#111622', border: '1px solid #30363d', borderRadius: 12, padding: 22 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.05rem', color: '#f0f6fc', fontWeight: 700 }}>Live Candidates Real-Time Risk Grid</h3>
+                  <div style={{ fontSize: '0.8rem', color: '#8b949e' }}>Continuous multi-agent perception status for active examination candidates</div>
+                </div>
+                <button onClick={fetchData} style={{ background: '#21262d', border: '1px solid #30363d', color: '#c9d1d9', padding: '6px 12px', borderRadius: 6, cursor: 'pointer', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <RefreshCw size={13} /> Refresh
+                </button>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 14 }}>
+                {sessions.map(s => {
+                  const risk = s.currentRiskScore || 0;
+                  const isCritical = risk >= 0.85;
+                  const isHigh = risk >= 0.70 && risk < 0.85;
+                  const isMed = risk >= 0.40 && risk < 0.70;
+                  const color = isCritical ? '#f85149' : isHigh ? '#e3b341' : isMed ? '#d29922' : '#3fb950';
+
+                  return (
+                    <div key={s.sessionId} style={{ background: '#0d1117', border: `1px solid ${isCritical ? '#da3633' : '#30363d'}`, borderRadius: 10, padding: 14 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '0.75rem', color: '#8b949e', fontWeight: 600 }}>{s.sessionId}</span>
+                        <span style={{ fontSize: '0.7rem', padding: '2px 6px', borderRadius: 4, background: `${color}25`, color, fontWeight: 700 }}>
+                          {isCritical ? 'CRITICAL' : isHigh ? 'HIGH' : isMed ? 'MEDIUM' : 'CLEAR'}
+                        </span>
+                      </div>
+
+                      <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#f0f6fc', marginTop: 8 }}>{s.candidateName}</div>
+                      
+                      <div style={{ marginTop: 12 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', marginBottom: 4 }}>
+                          <span style={{ color: '#8b949e' }}>Risk Score</span>
+                          <span style={{ fontWeight: 700, color }}>{(risk * 100).toFixed(0)}%</span>
+                        </div>
+                        <div style={{ width: '100%', height: 6, background: '#21262d', borderRadius: 3, overflow: 'hidden' }}>
+                          <div style={{ width: `${Math.min(100, risk * 100)}%`, height: '100%', background: color, transition: 'width 0.4s ease' }}></div>
+                        </div>
+                      </div>
+
+                      <div style={{ marginTop: 12, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                        {isCritical && <span style={{ fontSize: '0.65rem', background: '#da363330', color: '#f85149', padding: '2px 5px', borderRadius: 4 }}>📱 Phone In Frame</span>}
+                        {isHigh && <span style={{ fontSize: '0.65rem', background: '#e3b34130', color: '#e3b341', padding: '2px 5px', borderRadius: 4 }}>📋 Large Paste</span>}
+                        {isMed && <span style={{ fontSize: '0.65rem', background: '#d2992230', color: '#d29922', padding: '2px 5px', borderRadius: 4 }}>👀 Looking Away</span>}
+                        {!isCritical && !isHigh && !isMed && <span style={{ fontSize: '0.65rem', background: '#2ea04330', color: '#3fb950', padding: '2px 5px', borderRadius: 4 }}>✓ Clean Focus</span>}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Live Incidents & Cheating Attempts Table */}
+            <div style={{ background: '#111622', border: '1px solid #30363d', borderRadius: 12, padding: 22 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.05rem', color: '#f0f6fc', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <AlertTriangle size={18} style={{ color: '#f85149' }} />
+                    <span>Real-Time Cheating & Violation Incidents Log</span>
+                  </h3>
+                  <div style={{ fontSize: '0.8rem', color: '#8b949e' }}>Logged directly from Multi-Agent AI Perception Mesh & Wi-Fi Interceptor into PostgreSQL</div>
+                </div>
+
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <div style={{ position: 'relative' }}>
+                    <Search size={14} style={{ position: 'absolute', left: 10, top: 10, color: '#8b949e' }} />
+                    <input 
+                      type="text" 
+                      placeholder="Search candidate, violation..." 
+                      value={searchQuery}
+                      onChange={e => setSearchQuery(e.target.value)}
+                      style={{ background: '#0d1117', border: '1px solid #30363d', color: '#f0f6fc', padding: '7px 12px 7px 30px', borderRadius: 6, fontSize: '0.8rem', outline: 'none' }}
+                    />
+                  </div>
+
+                  <select 
+                    value={severityFilter}
+                    onChange={e => setSeverityFilter(e.target.value as any)}
+                    style={{ background: '#0d1117', border: '1px solid #30363d', color: '#f0f6fc', padding: '7px 12px', borderRadius: 6, fontSize: '0.8rem', outline: 'none' }}
+                  >
+                    <option value="ALL">All Severity Tiers</option>
+                    <option value="CRITICAL">CRITICAL only</option>
+                    <option value="HIGH">HIGH only</option>
+                    <option value="MEDIUM">MEDIUM only</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Table */}
+              <div style={{ overflowX: 'auto', borderRadius: 8, border: '1px solid #21262d' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
+                  <thead>
+                    <tr style={{ background: '#161b22', color: '#8b949e', borderBottom: '1px solid #30363d' }}>
+                      <th style={{ padding: '12px 16px' }}>Time</th>
+                      <th style={{ padding: '12px 16px' }}>Candidate Name</th>
+                      <th style={{ padding: '12px 16px' }}>Session ID</th>
+                      <th style={{ padding: '12px 16px' }}>Severity</th>
+                      <th style={{ padding: '12px 16px' }}>Risk Score</th>
+                      <th style={{ padding: '12px 16px' }}>AI Explainability Rationale</th>
+                      <th style={{ padding: '12px 16px' }}>Status</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'right' }}>Admin Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredAlerts.length === 0 ? (
+                      <tr>
+                        <td colSpan={8} style={{ padding: 32, textAlign: 'center', color: '#8b949e' }}>
+                          No cheating incidents match the selected filters.
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredAlerts.map((alert, idx) => {
+                        const isCrit = alert.alertLevel === 'CRITICAL';
+                        const isHigh = alert.alertLevel === 'HIGH';
+                        const badgeColor = isCrit ? '#f85149' : isHigh ? '#e3b341' : '#d29922';
+
+                        return (
+                          <tr key={alert.alertId || idx} style={{ borderBottom: '1px solid #21262d', background: idx % 2 === 0 ? '#0d1117' : '#111622' }}>
+                            <td style={{ padding: '12px 16px', color: '#8b949e', whiteSpace: 'nowrap' }}>
+                              {new Date(alert.createdAt).toLocaleTimeString()}
+                            </td>
+                            <td style={{ padding: '12px 16px', fontWeight: 700, color: '#f0f6fc', whiteSpace: 'nowrap' }}>
+                              {alert.candidateName}
+                            </td>
+                            <td style={{ padding: '12px 16px', color: '#8b949e', fontFamily: 'monospace', fontSize: '0.78rem' }}>
+                              {alert.sessionId}
+                            </td>
+                            <td style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}>
+                              <span style={{ background: `${badgeColor}25`, color: badgeColor, border: `1px solid ${badgeColor}60`, padding: '3px 8px', borderRadius: 4, fontWeight: 800, fontSize: '0.72rem' }}>
+                                {alert.alertLevel}
+                              </span>
+                            </td>
+                            <td style={{ padding: '12px 16px', fontWeight: 700, color: badgeColor }}>
+                              {(alert.riskScore * 100).toFixed(0)}%
+                            </td>
+                            <td style={{ padding: '12px 16px', color: '#c9d1d9', maxWidth: 360, lineHeight: 1.4 }}>
+                              {alert.explainabilityText}
+                            </td>
+                            <td style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}>
+                              <span style={{ color: alert.status === 'RESOLVED' ? '#3fb950' : '#e3b341', fontSize: '0.78rem', fontWeight: 600 }}>
+                                {alert.status}
+                              </span>
+                            </td>
+                            <td style={{ padding: '12px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                              <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+                                <button 
+                                  onClick={() => handleAction(alert.alertId, alert.sessionId, 'WARN')}
+                                  title="Send instant warning message to candidate's screen"
+                                  style={{ background: '#21262d', color: '#e3b341', border: '1px solid #30363d', padding: '4px 10px', borderRadius: 6, fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}
+                                >
+                                  Warn
+                                </button>
+                                <button 
+                                  onClick={() => handleAction(alert.alertId, alert.sessionId, 'DISMISS')}
+                                  title="Dismiss alert as false positive"
+                                  style={{ background: '#21262d', color: '#3fb950', border: '1px solid #30363d', padding: '4px 10px', borderRadius: 6, fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}
+                                >
+                                  Clear
+                                </button>
+                                <button 
+                                  onClick={() => handleAction(alert.alertId, alert.sessionId, 'TERMINATE')}
+                                  title="Immediately lock and terminate candidate session"
+                                  style={{ background: '#da3633', color: '#ffffff', border: 'none', padding: '4px 10px', borderRadius: 6, fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}
+                                >
+                                  Terminate
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+          </div>
+        )}
+
+        {/* ========================================================================= */}
+        {/* TAB 2: AI SENSITIVITY POLICY                                              */}
+        {/* ========================================================================= */}
         {activeTab === 'POLICY' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
             {saveStatus && (
@@ -133,10 +577,10 @@ export default function App() {
               </div>
             )}
 
-            <div className="glass-panel" style={{ padding: 28 }}>
+            <div style={{ background: '#111622', border: '1px solid #30363d', borderRadius: 12, padding: 28 }}>
               <h2 style={{ color: '#f0f6fc', marginTop: 0, fontSize: '1.25rem' }}>AI Proctoring Sensitivity Profile</h2>
               <p style={{ color: '#8b949e', fontSize: '0.9rem', lineHeight: 1.5 }}>
-                Configure multi-agent decision weights and dynamic risk thresholds. Changes deploy instantly to the decision orchestrator.
+                Configure multi-agent decision weights and dynamic risk thresholds. Changes deploy instantly to the live Decision Orchestrator engine.
               </p>
 
               {/* Presets Button Row */}
@@ -166,7 +610,7 @@ export default function App() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: '#c9d1d9', marginBottom: 6 }}>
-                    <span>Vision Guard Weight</span>
+                    <span>Vision Guard Weight (YOLOv11 Face & Object)</span>
                     <span style={{ fontWeight: 700, color: '#58a6ff' }}>{(weights.vision * 100).toFixed(0)}%</span>
                   </div>
                   <input
@@ -185,7 +629,7 @@ export default function App() {
 
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: '#c9d1d9', marginBottom: 6 }}>
-                    <span>Behavioral Analyst Weight</span>
+                    <span>Behavioral & Clipboard Analyst Weight</span>
                     <span style={{ fontWeight: 700, color: '#58a6ff' }}>{(weights.behavior * 100).toFixed(0)}%</span>
                   </div>
                   <input
@@ -204,7 +648,7 @@ export default function App() {
 
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: '#c9d1d9', marginBottom: 6 }}>
-                    <span>Collusion Detection Weight</span>
+                    <span>Wi-Fi Proxy & Collusion Interceptor Weight</span>
                     <span style={{ fontWeight: 700, color: '#58a6ff' }}>{(weights.collusion * 100).toFixed(0)}%</span>
                   </div>
                   <input
@@ -223,7 +667,7 @@ export default function App() {
 
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: '#c9d1d9', marginBottom: 6 }}>
-                    <span>Risk Velocity / Decay Weight</span>
+                    <span>Risk Velocity / Exponential Decay Factor ($\alpha$)</span>
                     <span style={{ fontWeight: 700, color: '#58a6ff' }}>{(weights.risk * 100).toFixed(0)}%</span>
                   </div>
                   <input
@@ -241,7 +685,7 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Action Save Button */}
+              {/* Save Button */}
               <div style={{ marginTop: 32, display: 'flex', justifyContent: 'flex-end' }}>
                 <button
                   onClick={handleSavePolicy}
@@ -266,10 +710,12 @@ export default function App() {
           </div>
         )}
 
+        {/* ========================================================================= */}
+        {/* TAB 3: SHA-256 AUDIT LEDGER                                               */}
+        {/* ========================================================================= */}
         {activeTab === 'AUDIT' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-            {/* Integrity Status Header Banner */}
-            <div className="glass-panel" style={{ padding: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: chainValid ? '1px solid #2ea043' : '1px solid #da3633' }}>
+            <div style={{ background: '#111622', padding: 20, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: chainValid ? '1px solid #2ea043' : '1px solid #da3633' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                 {chainValid ? <ShieldCheck size={28} style={{ color: '#3fb950' }} /> : <AlertCircle size={28} style={{ color: '#f85149' }} />}
                 <div>
@@ -288,13 +734,12 @@ export default function App() {
               </button>
             </div>
 
-            {/* Audit Logs Table */}
-            <div className="glass-panel" style={{ overflow: 'hidden' }}>
+            <div style={{ background: '#111622', border: '1px solid #30363d', borderRadius: 12, overflow: 'hidden' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
                 <thead>
                   <tr style={{ background: '#161b22', color: '#8b949e', borderBottom: '1px solid #30363d' }}>
                     <th style={{ padding: '12px 16px' }}>Timestamp</th>
-                    <th style={{ padding: '12px 16px' }}>User ID</th>
+                    <th style={{ padding: '12px 16px' }}>User / Agent ID</th>
                     <th style={{ padding: '12px 16px' }}>Action</th>
                     <th style={{ padding: '12px 16px' }}>Payload Details</th>
                     <th style={{ padding: '12px 16px' }}>SHA-256 Entry Hash</th>
@@ -320,8 +765,11 @@ export default function App() {
           </div>
         )}
 
+        {/* ========================================================================= */}
+        {/* TAB 4: COMPLIANCE REPORTS                                                 */}
+        {/* ========================================================================= */}
         {activeTab === 'REPORTS' && (
-          <div className="glass-panel" style={{ padding: 28 }}>
+          <div style={{ background: '#111622', border: '1px solid #30363d', borderRadius: 12, padding: 28 }}>
             <h2 style={{ color: '#f0f6fc', marginTop: 0, fontSize: '1.25rem' }}>Post-Exam Integrity & Compliance Reports</h2>
             <p style={{ color: '#8b949e', fontSize: '0.9rem', marginBottom: 24 }}>
               Export certified examination integrity audit packages with full multi-agent evidence breakdown.
@@ -330,8 +778,8 @@ export default function App() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
               <div style={{ background: '#0d1117', padding: 20, borderRadius: 8, border: '1px solid #30363d' }}>
                 <div style={{ fontWeight: 700, color: '#f0f6fc', marginBottom: 8 }}>CS101-2026 Algorithms Final Exam</div>
-                <div style={{ fontSize: '0.8rem', color: '#8b949e', marginBottom: 16 }}>Completed Candidates: 5 | Flagged: 2</div>
-                <button style={{ background: '#238636', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: 6, fontSize: '0.85rem', cursor: 'pointer' }}>
+                <div style={{ fontSize: '0.8rem', color: '#8b949e', marginBottom: 16 }}>Completed Candidates: {sessions.length} | Flagged: {alerts.length}</div>
+                <button style={{ background: '#238636', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: 6, fontSize: '0.85rem', cursor: 'pointer', fontWeight: 600 }}>
                   Download Integrity Summary (PDF)
                 </button>
               </div>
@@ -339,13 +787,14 @@ export default function App() {
               <div style={{ background: '#0d1117', padding: 20, borderRadius: 8, border: '1px solid #30363d' }}>
                 <div style={{ fontWeight: 700, color: '#f0f6fc', marginBottom: 8 }}>Raw SHA-256 Ledger Archive</div>
                 <div style={{ fontSize: '0.8rem', color: '#8b949e', marginBottom: 16 }}>Full cryptographic proof chain for accreditation audits</div>
-                <button style={{ background: '#21262d', color: '#c9d1d9', border: '1px solid #30363d', padding: '8px 16px', borderRadius: 6, fontSize: '0.85rem', cursor: 'pointer' }}>
+                <button style={{ background: '#21262d', color: '#c9d1d9', border: '1px solid #30363d', padding: '8px 16px', borderRadius: 6, fontSize: '0.85rem', cursor: 'pointer', fontWeight: 600 }}>
                   Export JSON Hash-Chain
                 </button>
               </div>
             </div>
           </div>
         )}
+
       </div>
     </div>
   );

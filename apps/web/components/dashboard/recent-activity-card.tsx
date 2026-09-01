@@ -14,31 +14,31 @@ interface ActivityItem {
 const mockActivities: ActivityItem[] = [
   {
     id: '1',
-    type: 'EXAM_CREATED',
-    title: 'New Exam Scheduled',
-    timestamp: new Date().toISOString(),
-    details: 'CS101 Midterm Examination scheduled for 150 candidates.'
+    type: 'VIOLATION_FLAGGED',
+    title: 'Critical Violation: Smartphone Detected',
+    timestamp: new Date(Date.now() - 2 * 60 * 1000).toISOString(),
+    details: 'Candidate Ananya Iyer (sess_103) flagged: Secondary device smartphone detected in frame.'
   },
   {
     id: '2',
     type: 'VIOLATION_FLAGGED',
-    title: 'Integrity Alert Flagged',
+    title: 'High Alert: Clipboard Paste Anomaly',
     timestamp: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
-    details: 'Multiple displays detected on Session #sess_8912.'
+    details: 'Candidate Priya Sharma (sess_101) flagged: 450 bytes pasted from external clipboard.'
   },
   {
     id: '3',
-    type: 'REGISTRATION',
-    title: 'New User Registered',
-    timestamp: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
-    details: 'Candidate glitchivy8275@gmail.com registered under inst_itc.'
+    type: 'VIOLATION_FLAGGED',
+    title: 'Integrity Alert: Gaze Deviation',
+    timestamp: new Date(Date.now() - 32 * 60 * 1000).toISOString(),
+    details: 'Candidate Aarav Patel (sess_102) flagged: Sustained gaze off-screen for 8.4 seconds.'
   },
   {
     id: '4',
     type: 'SYSTEM_EVENT',
-    title: 'Audit Policy Sync',
-    timestamp: new Date(Date.now() - 120 * 60 * 1000).toISOString(),
-    details: 'Lockdown browser policies synced across 3 institutions.'
+    title: 'Audit Ledger Hash-Chain Verified',
+    timestamp: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
+    details: 'SHA-256 block ledger synchronized for Rohan Singh (sess_100).'
   }
 ];
 
