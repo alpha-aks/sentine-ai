@@ -135,8 +135,48 @@ app.post('/api/alerts/:alertId/action', async (req: Request, res: Response) => {
   }
 });
 
+app.post('/api/auth/candidate-login', async (req: Request, res: Response) => {
+  const { email, fullName, sessionId } = req.body;
+  const targetSessionId = sessionId || 'sess_100';
+  const name = fullName || (email?.toLowerCase().includes('atharva') ? 'Atharva Salunkhe' : email?.split('@')[0] || 'Atharva Salunkhe');
+  const userEmail = email || 'atharva@gmail.com';
+  const displayName = `${name} (${userEmail})`;
+
+  try {
+    await pool.query(
+      'UPDATE exam_sessions SET candidate_name = $1, status = $2 WHERE session_id = $3',
+      [displayName, 'IN_PROGRESS', targetSessionId]
+    );
+
+    const logEntry = auditService.recordAction('CANDIDATE_LOGGED_IN', userEmail, 'inst_dy_patil_01', {
+      sessionId: targetSessionId,
+      candidateName: displayName,
+      email: userEmail,
+      loginTime: new Date().toISOString()
+    });
+
+    broadcast({
+      type: 'CANDIDATE_LOGIN',
+      payload: {
+        sessionId: targetSessionId,
+        candidateName: displayName,
+        email: userEmail,
+        status: 'IN_PROGRESS',
+        timestamp: new Date().toISOString(),
+        logHash: logEntry.entryHash
+      }
+    });
+
+    console.log(`[Postgres DB] Candidate login recorded & broadcast to Admin: ${displayName}`);
+    res.json({ success: true, candidateName: displayName, sessionId: targetSessionId });
+  } catch (err) {
+    console.error('Error handling candidate login in DB:', err);
+    res.status(500).json({ error: 'DB_ERROR' });
+  }
+});
+
 app.post('/api/submissions', async (req: Request, res: Response) => {
-  const { sessionId, candidateId, examId, answers } = req.body;
+  const { sessionId, candidateId, examId, answers, score } = req.body;
   const targetSessionId = sessionId || 'sess_100';
   console.log(`[Postgres DB] Received Exam Submission for session: ${targetSessionId}`);
   try {
@@ -147,11 +187,36 @@ app.post('/api/submissions', async (req: Request, res: Response) => {
       if (answers) {
         session.submissions = answers;
       }
+      const answeredCount = Object.keys(session.submissions || {}).length;
+      const calculatedScore = score !== undefined ? score : Math.min(100, Math.round((answeredCount / 5) * 100));
+
       await pool.query(
         'UPDATE exam_sessions SET status = $1, submitted_at = $2, submissions = $3 WHERE session_id = $4',
         [session.status, new Date(session.endedAt), JSON.stringify(session.submissions), session.sessionId]
       );
-      res.json({ success: true, session });
+
+      const logEntry = auditService.recordAction('EXAM_SUBMITTED', session.candidateName, 'inst_dy_patil_01', {
+        sessionId: targetSessionId,
+        score: calculatedScore,
+        answeredCount,
+        submittedAt: session.endedAt
+      });
+
+      broadcast({
+        type: 'CANDIDATE_SCORE_UPDATE',
+        payload: {
+          sessionId: targetSessionId,
+          candidateName: session.candidateName,
+          score: calculatedScore,
+          answeredCount,
+          status: 'COMPLETED',
+          riskScore: session.currentRiskScore,
+          endedAt: session.endedAt,
+          logHash: logEntry.entryHash
+        }
+      });
+
+      res.json({ success: true, session, score: calculatedScore });
     } else {
       res.status(404).json({ error: 'SESSION_NOT_FOUND' });
     }

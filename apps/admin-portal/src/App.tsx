@@ -57,15 +57,40 @@ export default function App() {
         try {
           const data = JSON.parse(event.data);
           if (data.type === 'ALERT') {
+          if (data.type === 'CANDIDATE_LOGIN') {
+            const payload = data.payload || data;
+            setActionNotice(`🎓 Candidate Logged In: ${payload.candidateName} has joined session ${payload.sessionId}`);
+            setTimeout(() => setActionNotice(null), 5000);
+            fetchData();
+            fetchAuditLogs();
+          } else if (data.type === 'CANDIDATE_SCORE_UPDATE') {
+            const payload = data.payload || data;
+            setActionNotice(`📝 Exam Submission: ${payload.candidateName} completed exam with Score: ${payload.score}%`);
+            setTimeout(() => setActionNotice(null), 6000);
+            setSessions(prev => prev.map(s => {
+              if (s.sessionId === payload.sessionId) {
+                return { 
+                  ...s, 
+                  status: 'COMPLETED',
+                  candidateName: payload.candidateName,
+                  currentRiskScore: payload.riskScore ?? s.currentRiskScore,
+                  submissions: { ...s.submissions, calculatedScore: payload.score }
+                };
+              }
+              return s;
+            }));
+            fetchAuditLogs();
+          } else if (data.type === 'ALERT' || data.type === 'ALERT_TRIGGERED') {
+            const payload = data.payload || data;
             const newAlert: Alert = {
-              alertId: data.alertId || `alt_${Date.now()}`,
-              sessionId: data.sessionId,
-              candidateName: data.candidateName || 'Live Candidate',
-              alertLevel: data.alertLevel || 'HIGH',
-              riskScore: data.riskScore || 0.75,
-              explainabilityText: data.explainabilityText || 'Flagged violation detected by AI perception mesh.',
+              alertId: payload.alertId || `alt_${Date.now()}`,
+              sessionId: payload.sessionId,
+              candidateName: payload.candidateName || 'Live Candidate',
+              alertLevel: payload.alertLevel || 'HIGH',
+              riskScore: payload.riskScore || 0.75,
+              explainabilityText: payload.explainabilityText || 'Flagged violation detected by AI perception mesh.',
               status: 'PENDING',
-              createdAt: data.createdAt || new Date().toISOString()
+              createdAt: payload.createdAt || new Date().toISOString()
             };
 
             setAlerts(prev => {
@@ -76,15 +101,16 @@ export default function App() {
 
             // Update candidate session risk score in real-time
             setSessions(prev => prev.map(s => {
-              if (s.sessionId === data.sessionId) {
-                return { ...s, currentRiskScore: data.riskScore || s.currentRiskScore };
+              if (s.sessionId === payload.sessionId) {
+                return { ...s, currentRiskScore: payload.riskScore || s.currentRiskScore };
               }
               return s;
             }));
-          } else if (data.type === 'DECISION') {
+          } else if (data.type === 'DECISION' || data.type === 'DECISION_UPDATE') {
+            const payload = data.payload || data;
             setSessions(prev => prev.map(s => {
-              if (s.sessionId === data.sessionId) {
-                return { ...s, currentRiskScore: data.decision?.finalRiskScore ?? s.currentRiskScore };
+              if (s.sessionId === payload.sessionId) {
+                return { ...s, currentRiskScore: payload.finalRiskScore ?? payload.decision?.finalRiskScore ?? s.currentRiskScore };
               }
               return s;
             }));
@@ -413,11 +439,21 @@ export default function App() {
                         </span>
                       </div>
 
-                      <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#f0f6fc', marginTop: 8 }}>{s.candidateName}</div>
+                      <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#f0f6fc', marginTop: 8, wordBreak: 'break-word' }}>
+                        {s.candidateName}
+                      </div>
+
+                      {/* Live Exam Score & Status */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8, fontSize: '0.78rem', background: '#161b22', padding: '4px 8px', borderRadius: 6, border: '1px solid #21262d' }}>
+                        <span style={{ color: '#8b949e' }}>Exam Score</span>
+                        <span style={{ fontWeight: 800, color: s.status === 'COMPLETED' ? '#3fb950' : '#58a6ff' }}>
+                          {(s.submissions as any)?.calculatedScore ? `${(s.submissions as any).calculatedScore}%` : (s.status === 'COMPLETED' ? '100%' : 'Active / In Progress')}
+                        </span>
+                      </div>
                       
-                      <div style={{ marginTop: 12 }}>
+                      <div style={{ marginTop: 10 }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', marginBottom: 4 }}>
-                          <span style={{ color: '#8b949e' }}>Risk Score</span>
+                          <span style={{ color: '#8b949e' }}>AI Risk Score</span>
                           <span style={{ fontWeight: 700, color }}>{(risk * 100).toFixed(0)}%</span>
                         </div>
                         <div style={{ width: '100%', height: 6, background: '#21262d', borderRadius: 3, overflow: 'hidden' }}>
@@ -426,10 +462,11 @@ export default function App() {
                       </div>
 
                       <div style={{ marginTop: 12, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                        {s.status === 'COMPLETED' && <span style={{ fontSize: '0.65rem', background: '#2ea04330', color: '#3fb950', padding: '2px 5px', borderRadius: 4 }}>✓ Exam Submitted</span>}
                         {isCritical && <span style={{ fontSize: '0.65rem', background: '#da363330', color: '#f85149', padding: '2px 5px', borderRadius: 4 }}>📱 Phone In Frame</span>}
                         {isHigh && <span style={{ fontSize: '0.65rem', background: '#e3b34130', color: '#e3b341', padding: '2px 5px', borderRadius: 4 }}>📋 Large Paste</span>}
                         {isMed && <span style={{ fontSize: '0.65rem', background: '#d2992230', color: '#d29922', padding: '2px 5px', borderRadius: 4 }}>👀 Looking Away</span>}
-                        {!isCritical && !isHigh && !isMed && <span style={{ fontSize: '0.65rem', background: '#2ea04330', color: '#3fb950', padding: '2px 5px', borderRadius: 4 }}>✓ Clean Focus</span>}
+                        {!isCritical && !isHigh && !isMed && s.status !== 'COMPLETED' && <span style={{ fontSize: '0.65rem', background: '#2ea04330', color: '#3fb950', padding: '2px 5px', borderRadius: 4 }}>✓ Clean Focus</span>}
                       </div>
                     </div>
                   );

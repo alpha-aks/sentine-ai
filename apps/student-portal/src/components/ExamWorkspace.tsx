@@ -633,8 +633,29 @@ export default function ExamWorkspace() {
   useEffect(() => {
     setExam(defaultExam);
 
+    const host = window.location.hostname || 'localhost';
     const controller = new AbortController();
-    fetch('http://localhost:4000/api/exams/exam_cs101', { signal: controller.signal })
+
+    // Register candidate login to PostgreSQL and broadcast to Admin
+    fetch(`http://${host}:4000/api/auth/candidate-login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: 'atharva@gmail.com',
+        fullName: 'Atharva Salunkhe',
+        sessionId: 'sess_100'
+      }),
+      signal: controller.signal
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.candidateName) {
+        setCandidateName(data.candidateName);
+      }
+    })
+    .catch(() => {});
+
+    fetch(`http://${host}:4000/api/exams/exam_cs101`, { signal: controller.signal })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data) setExam(data);
@@ -643,12 +664,12 @@ export default function ExamWorkspace() {
         // Fallback to defaultExam
       });
 
-    fetch('http://localhost:4000/api/sessions', { signal: controller.signal })
+    fetch(`http://${host}:4000/api/sessions`, { signal: controller.signal })
       .then((res) => (res.ok ? res.json() : []))
       .then((data) => {
         const mySession = data.find((s: any) => s.sessionId === 'sess_100');
         if (mySession) {
-          setCandidateName(`${mySession.candidateName} (Candidate #${mySession.candidateId})`);
+          setCandidateName(`${mySession.candidateName}`);
         }
       })
       .catch(() => {});
@@ -957,7 +978,23 @@ export default function ExamWorkspace() {
     }
 
     try {
-      await fetch('http://localhost:4007/v1/submissions', {
+      const host = window.location.hostname || 'localhost';
+      const answeredCount = Object.keys(answers).length;
+      const score = Math.round((answeredCount / (exam?.questions.length || 3)) * 100);
+
+      await fetch(`http://${host}:4000/api/submissions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId,
+          candidateId: 'cand_100',
+          examId: exam?.examId || 'exam_cs101',
+          answers,
+          score
+        })
+      }).catch(() => null);
+
+      await fetch(`http://${host}:4007/v1/submissions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
