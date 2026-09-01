@@ -11,7 +11,7 @@ export default function EvidenceVaultPage() {
     {
       evidenceId: 'ev_101',
       candidateSessionId: 'sess_101',
-      candidateName: 'Sarah Jenkins',
+      candidateName: 'Priya Sharma',
       type: 'SCREENSHOT',
       title: 'Secondary Smartphone Device in Frame',
       storageUri: '#',
@@ -22,7 +22,7 @@ export default function EvidenceVaultPage() {
     {
       evidenceId: 'ev_102',
       candidateSessionId: 'sess_101',
-      candidateName: 'Sarah Jenkins',
+      candidateName: 'Priya Sharma',
       type: 'AUDIO_RECORDING',
       title: 'Secondary Whisper Audio Clip',
       storageUri: '#',

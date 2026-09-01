@@ -589,7 +589,7 @@ export default function ExamWorkspace() {
     }
   }, [step, mediaStream]);
 
-  const sessionId = 'sess_100'; // Candidate Alex Johnson
+  const sessionId = 'sess_100'; // Candidate Rohan Singh
 
   // Default initial mock exam data
   const defaultExam: Exam = {

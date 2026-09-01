@@ -48,11 +48,11 @@ export async function initDb() {
     if (count === 0) {
       console.log('[Postgres DB] Seeding initial mock sessions to Neon database...');
       const candidates = [
-        { id: 'cand_alex_01', name: 'Alex Johnson', initialRisk: 0.12, status: 'IN_PROGRESS' },
-        { id: 'cand_sarah_02', name: 'Sarah Connor', initialRisk: 0.78, status: 'IN_PROGRESS' },
-        { id: 'cand_michael_03', name: 'Michael Chen', initialRisk: 0.45, status: 'IN_PROGRESS' },
-        { id: 'cand_elena_04', name: 'Elena Rostova', initialRisk: 0.88, status: 'IN_PROGRESS' },
-        { id: 'cand_david_05', name: 'David Smith', initialRisk: 0.05, status: 'IN_PROGRESS' }
+        { id: 'cand_alex_01', name: 'Rohan Singh', initialRisk: 0.12, status: 'IN_PROGRESS' },
+        { id: 'cand_sarah_02', name: 'Priya Sharma', initialRisk: 0.78, status: 'IN_PROGRESS' },
+        { id: 'cand_michael_03', name: 'Aarav Patel', initialRisk: 0.45, status: 'IN_PROGRESS' },
+        { id: 'cand_elena_04', name: 'Ananya Iyer', initialRisk: 0.88, status: 'IN_PROGRESS' },
+        { id: 'cand_david_05', name: 'Vikram Verma', initialRisk: 0.05, status: 'IN_PROGRESS' }
       ];
 
       for (let i = 0; i < candidates.length; i++) {
@@ -83,12 +83,21 @@ export async function initDb() {
           ($1, $2, $3, $4, $5, $6, $7, $8),
           ($9, $10, $11, $12, $13, $14, $15, $16)
       `, [
-        'alt_01', 'sess_103', 'Elena Rostova', 'CRITICAL', 0.88, 'Flagged due to: 2 faces detected in frame; Secondary device(s) visible: smartphone. Primary risk driver: Camera Tampering.', 'PENDING', new Date(),
-        'alt_02', 'sess_101', 'Sarah Connor', 'HIGH', 0.78, 'Flagged due to: Unusually large text insertion from external clipboard. Primary risk driver: Clipboard Paste Anomaly.', 'PENDING', new Date(Date.now() - 2 * 60 * 1000)
+        'alt_01', 'sess_103', 'Ananya Iyer', 'CRITICAL', 0.88, 'Flagged due to: 2 faces detected in frame; Secondary device(s) visible: smartphone. Primary risk driver: Camera Tampering.', 'PENDING', new Date(),
+        'alt_02', 'sess_101', 'Priya Sharma', 'HIGH', 0.78, 'Flagged due to: Unusually large text insertion from external clipboard. Primary risk driver: Clipboard Paste Anomaly.', 'PENDING', new Date(Date.now() - 2 * 60 * 1000)
       ]);
       console.log('[Postgres DB] Seeding completed.');
     } else {
-      console.log('[Postgres DB] Schema verified. Existing records found:', count);
+      // Update existing records to Indian names
+      await client.query(`UPDATE exam_sessions SET candidate_name = 'Rohan Singh' WHERE session_id = 'sess_100' OR candidate_name = 'Alex Johnson'`);
+      await client.query(`UPDATE exam_sessions SET candidate_name = 'Priya Sharma' WHERE session_id = 'sess_101' OR candidate_name = 'Sarah Connor'`);
+      await client.query(`UPDATE exam_sessions SET candidate_name = 'Aarav Patel' WHERE session_id = 'sess_102' OR candidate_name = 'Michael Chen'`);
+      await client.query(`UPDATE exam_sessions SET candidate_name = 'Ananya Iyer' WHERE session_id = 'sess_103' OR candidate_name = 'Elena Rostova'`);
+      await client.query(`UPDATE exam_sessions SET candidate_name = 'Vikram Verma' WHERE session_id = 'sess_104' OR candidate_name = 'David Smith'`);
+      
+      await client.query(`UPDATE alert_logs SET candidate_name = 'Ananya Iyer' WHERE candidate_name = 'Elena Rostova' OR session_id = 'sess_103'`);
+      await client.query(`UPDATE alert_logs SET candidate_name = 'Priya Sharma' WHERE candidate_name = 'Sarah Connor' OR session_id = 'sess_101'`);
+      console.log('[Postgres DB] Schema verified. Existing records updated with Indian candidate names.');
     }
   } catch (err) {
     console.error('[Postgres DB] Database initialization failed:', err);

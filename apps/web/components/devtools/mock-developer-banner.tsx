@@ -62,11 +62,11 @@ export function MockDeveloperBanner() {
             onChange={(e) => handleRoleChange(e.target.value)}
             className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200 focus:outline-none cursor-pointer"
           >
-            <option value="SUPER_ADMIN">SUPER_ADMIN (System Admin)</option>
-            <option value="INSTITUTION_ADMIN">INSTITUTION_ADMIN (Sarah Connor)</option>
-            <option value="FACULTY">FACULTY (Prof. Alan Turing)</option>
-            <option value="PROCTOR">PROCTOR (David Proctor)</option>
-            <option value="CANDIDATE">CANDIDATE / STUDENT (Tanishq Sharma)</option>
+            <option value="SUPER_ADMIN">SUPER_ADMIN (Prof. Arjun Mehta)</option>
+            <option value="INSTITUTION_ADMIN">INSTITUTION_ADMIN (Dr. Sneha Kulkarni)</option>
+            <option value="FACULTY">FACULTY (Prof. Vikramaditya)</option>
+            <option value="PROCTOR">PROCTOR (Dr. Rajesh Sharma)</option>
+            <option value="CANDIDATE">CANDIDATE / STUDENT (Rohan Singh)</option>
           </select>
 
           <Button variant="ghost" size="sm" onClick={handleReset} className="h-7 text-slate-300 hover:text-white hover:bg-slate-800 px-2">

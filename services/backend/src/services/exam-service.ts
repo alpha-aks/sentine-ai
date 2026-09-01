@@ -59,11 +59,11 @@ export class ExamService {
 
     // Seed mock candidate exam sessions for live proctoring demonstration
     const candidates = [
-      { id: 'cand_alex_01', name: 'Alex Johnson', initialRisk: 0.12, status: 'IN_PROGRESS' as const },
-      { id: 'cand_sarah_02', name: 'Sarah Connor', initialRisk: 0.78, status: 'IN_PROGRESS' as const },
-      { id: 'cand_michael_03', name: 'Michael Chen', initialRisk: 0.45, status: 'IN_PROGRESS' as const },
-      { id: 'cand_elena_04', name: 'Elena Rostova', initialRisk: 0.88, status: 'IN_PROGRESS' as const },
-      { id: 'cand_david_05', name: 'David Smith', initialRisk: 0.05, status: 'IN_PROGRESS' as const }
+      { id: 'cand_alex_01', name: 'Rohan Singh', initialRisk: 0.12, status: 'IN_PROGRESS' as const },
+      { id: 'cand_sarah_02', name: 'Priya Sharma', initialRisk: 0.78, status: 'IN_PROGRESS' as const },
+      { id: 'cand_michael_03', name: 'Aarav Patel', initialRisk: 0.45, status: 'IN_PROGRESS' as const },
+      { id: 'cand_elena_04', name: 'Ananya Iyer', initialRisk: 0.88, status: 'IN_PROGRESS' as const },
+      { id: 'cand_david_05', name: 'Vikram Verma', initialRisk: 0.05, status: 'IN_PROGRESS' as const }
     ];
 
     candidates.forEach((c, idx) => {

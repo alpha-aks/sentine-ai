@@ -24,11 +24,11 @@ export default function App() {
       .catch(() => {
         // Fallback seed sessions
         setSessions([
-          { sessionId: 'sess_100', examId: 'exam_cs101', candidateId: 'cand_alex_01', candidateName: 'Alex Johnson', status: 'IN_PROGRESS', currentRiskScore: 0.12, submissions: {} },
-          { sessionId: 'sess_101', examId: 'exam_cs101', candidateId: 'cand_sarah_02', candidateName: 'Sarah Connor', status: 'IN_PROGRESS', currentRiskScore: 0.78, submissions: {} },
-          { sessionId: 'sess_102', examId: 'exam_cs101', candidateId: 'cand_michael_03', candidateName: 'Michael Chen', status: 'IN_PROGRESS', currentRiskScore: 0.45, submissions: {} },
-          { sessionId: 'sess_103', examId: 'exam_cs101', candidateId: 'cand_elena_04', candidateName: 'Elena Rostova', status: 'IN_PROGRESS', currentRiskScore: 0.88, submissions: {} },
-          { sessionId: 'sess_104', examId: 'exam_cs101', candidateId: 'cand_david_05', candidateName: 'David Smith', status: 'IN_PROGRESS', currentRiskScore: 0.05, submissions: {} }
+          { sessionId: 'sess_100', examId: 'exam_cs101', candidateId: 'cand_alex_01', candidateName: 'Rohan Singh', status: 'IN_PROGRESS', currentRiskScore: 0.12, submissions: {} },
+          { sessionId: 'sess_101', examId: 'exam_cs101', candidateId: 'cand_sarah_02', candidateName: 'Priya Sharma', status: 'IN_PROGRESS', currentRiskScore: 0.78, submissions: {} },
+          { sessionId: 'sess_102', examId: 'exam_cs101', candidateId: 'cand_michael_03', candidateName: 'Aarav Patel', status: 'IN_PROGRESS', currentRiskScore: 0.45, submissions: {} },
+          { sessionId: 'sess_103', examId: 'exam_cs101', candidateId: 'cand_elena_04', candidateName: 'Ananya Iyer', status: 'IN_PROGRESS', currentRiskScore: 0.88, submissions: {} },
+          { sessionId: 'sess_104', examId: 'exam_cs101', candidateId: 'cand_david_05', candidateName: 'Vikram Verma', status: 'IN_PROGRESS', currentRiskScore: 0.05, submissions: {} }
         ]);
       });
 
@@ -40,7 +40,7 @@ export default function App() {
           {
             alertId: 'alt_01',
             sessionId: 'sess_103',
-            candidateName: 'Elena Rostova',
+            candidateName: 'Ananya Iyer',
             alertLevel: 'CRITICAL',
             riskScore: 0.88,
             explainabilityText: 'Flagged due to: 2 faces detected in frame; Secondary device(s) visible: smartphone. Primary risk driver: Camera Tampering.',
@@ -50,7 +50,7 @@ export default function App() {
           {
             alertId: 'alt_02',
             sessionId: 'sess_101',
-            candidateName: 'Sarah Connor',
+            candidateName: 'Priya Sharma',
             alertLevel: 'HIGH',
             riskScore: 0.78,
             explainabilityText: 'Flagged due to: Unusually large text insertion from external clipboard. Primary risk driver: Clipboard Paste Anomaly.',

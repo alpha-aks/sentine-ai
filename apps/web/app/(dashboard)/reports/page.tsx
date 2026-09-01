@@ -37,7 +37,7 @@ const DEFAULT_AUDIT_LOGS: AuditLogRecord[] = [
   {
     id: 'sub_102',
     receiptId: 'SENTINEL-REC-819203',
-    candidateName: 'Alex Johnson (cand_101)',
+    candidateName: 'Rohan Singh (cand_101)',
     examTitle: 'CS401: Advanced Algorithms Final',
     examCode: 'CS401-2026',
     submittedAt: '2026-07-26T17:30:00Z',
@@ -49,7 +49,7 @@ const DEFAULT_AUDIT_LOGS: AuditLogRecord[] = [
   {
     id: 'sub_103',
     receiptId: 'SENTINEL-REC-739102',
-    candidateName: 'Sarah Jenkins (cand_102)',
+    candidateName: 'Priya Sharma (cand_102)',
     examTitle: 'CS301: Operating Systems Midterm',
     examCode: 'CS301-2026',
     submittedAt: '2026-07-26T14:20:00Z',
