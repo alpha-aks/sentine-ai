@@ -10,7 +10,7 @@ export default function ExamWorkspace() {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [submittedTimestamp, setSubmittedTimestamp] = useState<string | null>(null);
   const [receiptId, setReceiptId] = useState<string | null>(null);
-  const [candidateName, setCandidateName] = useState('Tanishq Sharma (Candidate #100)');
+  const [candidateName, setCandidateName] = useState('Atharva Salunkhe (Candidate #100)');
   
   // WebSockets & Proctoring state
   const [wsConnected, setWsConnected] = useState(false);

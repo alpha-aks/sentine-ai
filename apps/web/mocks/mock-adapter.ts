@@ -21,7 +21,48 @@ export function setupMockInterceptor(client: AxiosInstance) {
       if (url.includes('/auth/me')) {
         const u = mockDb.getCurrentUser();
         mockData = { user: u, permissions: u.permissions };
-      } else if (url.includes('/auth/login') || url.includes('/auth/refresh') || url.includes('/auth/register')) {
+      } else if (url.includes('/auth/login') || url.includes('/auth/register')) {
+        let body: any = {};
+        try {
+          body = config.data ? (typeof config.data === 'string' ? JSON.parse(config.data) : config.data) : {};
+        } catch {
+          body = {};
+        }
+
+        const email = body.email || 'atharva@gmail.com';
+        let fullName = body.fullName;
+        if (!fullName) {
+          if (email.toLowerCase().includes('atharva')) {
+            fullName = 'Atharva Salunkhe';
+          } else if (email.toLowerCase().includes('tanisha')) {
+            fullName = 'Tanisha Chauhan';
+          } else if (email.toLowerCase().includes('sulaiman')) {
+            fullName = 'Sulaiman Khan';
+          } else if (email.toLowerCase().includes('admin')) {
+            fullName = 'Prof. Arjun Mehta';
+          } else if (email.toLowerCase().includes('proctor')) {
+            fullName = 'Dr. Rajesh Sharma';
+          } else {
+            const prefix = email.split('@')[0].replace(/[._]/g, ' ');
+            fullName = prefix.charAt(0).toUpperCase() + prefix.slice(1);
+          }
+        }
+
+        const role = email.toLowerCase().includes('admin') 
+          ? 'EXAM_ADMIN' 
+          : email.toLowerCase().includes('proctor') 
+          ? 'LIVE_PROCTOR' 
+          : 'CANDIDATE';
+
+        mockDb.currentUserRole = role;
+        const u = mockDb.setCustomUser({
+          email,
+          fullName,
+          role
+        });
+
+        mockData = { accessToken: u.jwtToken, refreshToken: u.refreshToken, user: u };
+      } else if (url.includes('/auth/refresh')) {
         const u = mockDb.getCurrentUser();
         mockData = { accessToken: u.jwtToken, refreshToken: u.refreshToken, user: u };
       }
@@ -163,6 +204,7 @@ export function setupMockInterceptor(client: AxiosInstance) {
             }
           ];
         } else if (url.includes('/candidates')) {
+          const currentUserName = mockDb.getCurrentUser().fullName || 'Atharva Salunkhe';
           const candIdMatch = url.match(/\/candidates\/([^\?\/]+)$/);
           if (candIdMatch && candIdMatch[1] !== 'search') {
             const isSelf = candIdMatch[1] === 'sess_100' || candIdMatch[1] === 'cand_100';
@@ -171,7 +213,7 @@ export function setupMockInterceptor(client: AxiosInstance) {
               examId: 'exam_cs101',
               institutionId: 'inst_mit_01',
               candidateId: isSelf ? 'cand_100' : 'cand_101',
-              candidateName: isSelf ? 'Rohan Singh (YOU - Live Candidate)' : 'Priya Sharma',
+              candidateName: isSelf ? `${currentUserName} (YOU - Live Candidate)` : 'Priya Sharma',
               status: 'IN_PROGRESS',
               currentRiskScore: isSelf ? 0.05 : 0.78,
               riskLevel: isSelf ? 'LOW' : 'HIGH',
@@ -189,7 +231,7 @@ export function setupMockInterceptor(client: AxiosInstance) {
                 examId: 'exam_cs101',
                 institutionId: 'inst_mit_01',
                 candidateId: 'cand_100',
-                candidateName: 'Rohan Singh (YOU - Live Candidate)',
+                candidateName: `${currentUserName} (YOU - Live Candidate)`,
                 status: 'IN_PROGRESS',
                 currentRiskScore: 0.05,
                 riskLevel: 'LOW',

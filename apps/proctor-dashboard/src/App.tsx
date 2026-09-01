@@ -24,7 +24,7 @@ export default function App() {
       .catch(() => {
         // Fallback seed sessions
         setSessions([
-          { sessionId: 'sess_100', examId: 'exam_cs101', candidateId: 'cand_alex_01', candidateName: 'Rohan Singh', status: 'IN_PROGRESS', currentRiskScore: 0.12, submissions: {} },
+          { sessionId: 'sess_100', examId: 'exam_cs101', candidateId: 'cand_alex_01', candidateName: 'Atharva Salunkhe', status: 'IN_PROGRESS', currentRiskScore: 0.12, submissions: {} },
           { sessionId: 'sess_101', examId: 'exam_cs101', candidateId: 'cand_sarah_02', candidateName: 'Priya Sharma', status: 'IN_PROGRESS', currentRiskScore: 0.78, submissions: {} },
           { sessionId: 'sess_102', examId: 'exam_cs101', candidateId: 'cand_michael_03', candidateName: 'Aarav Patel', status: 'IN_PROGRESS', currentRiskScore: 0.45, submissions: {} },
           { sessionId: 'sess_103', examId: 'exam_cs101', candidateId: 'cand_elena_04', candidateName: 'Ananya Iyer', status: 'IN_PROGRESS', currentRiskScore: 0.88, submissions: {} },

@@ -59,7 +59,7 @@ export class ExamService {
 
     // Seed mock candidate exam sessions for live proctoring demonstration
     const candidates = [
-      { id: 'cand_alex_01', name: 'Rohan Singh', initialRisk: 0.12, status: 'IN_PROGRESS' as const },
+      { id: 'cand_alex_01', name: 'Atharva Salunkhe', initialRisk: 0.12, status: 'IN_PROGRESS' as const },
       { id: 'cand_sarah_02', name: 'Priya Sharma', initialRisk: 0.78, status: 'IN_PROGRESS' as const },
       { id: 'cand_michael_03', name: 'Aarav Patel', initialRisk: 0.45, status: 'IN_PROGRESS' as const },
       { id: 'cand_elena_04', name: 'Ananya Iyer', initialRisk: 0.88, status: 'IN_PROGRESS' as const },

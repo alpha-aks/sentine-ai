@@ -9,7 +9,8 @@ import { MOCK_AI_ANALYTICS_EVIDENCE, MOCK_DASHBOARD_STATS } from './data/analyti
 class MockDatabase {
   private static instance: MockDatabase;
 
-  public currentUserRole: string = 'EXAM_ADMIN';
+  public currentUserRole: string = 'CANDIDATE';
+  public customUser: MockAuthUser | null = null;
   public authUsers = { ...MOCK_DEV_USERS };
   public users = [...MOCK_USERS];
   public roles = [...MOCK_ROLES];
@@ -40,15 +41,34 @@ class MockDatabase {
   }
 
   public getCurrentUser(): MockAuthUser {
+    if (this.customUser) {
+      return this.customUser;
+    }
     return (
       this.authUsers[this.currentUserRole] ||
+      this.authUsers.CANDIDATE ||
       this.authUsers.SUPER_ADMIN ||
       this.authUsers.EXAM_ADMIN ||
       Object.values(this.authUsers)[0]
     );
   }
 
+  public setCustomUser(user: Partial<MockAuthUser>): MockAuthUser {
+    const base = this.getCurrentUser();
+    this.customUser = {
+      ...base,
+      ...user,
+      id: user.id || base.id,
+      userId: user.userId || base.userId,
+      email: user.email || base.email,
+      fullName: user.fullName || base.fullName,
+      role: user.role || base.role
+    };
+    return this.customUser;
+  }
+
   public switchRole(roleKey: string): MockAuthUser {
+    this.customUser = null;
     if (this.authUsers[roleKey]) {
       this.currentUserRole = roleKey;
     }
@@ -56,6 +76,7 @@ class MockDatabase {
   }
 
   public resetData(): void {
+    this.customUser = null;
     this.authUsers = { ...MOCK_DEV_USERS };
     this.users = [...MOCK_USERS];
     this.roles = [...MOCK_ROLES];
